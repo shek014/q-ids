@@ -17,38 +17,10 @@ The question the project is built to answer: **on identical, realistically gener
 
 ## Pipeline
 
-```
-┌─────────────────┐
-│  Mininet topo   │  emulated hosts, switches, links
-└────────┬────────┘
-         │
-    ┌────┴─────┐
-    │  Traffic │  benign: iperf, curl, ping, synthetic app flows
-    │   drive  │  attack: Nmap scans, Scapy-crafted floods/spoofing
-    └────┬─────┘
-         │  tcpdump on the switch / host interfaces
-         ▼
-   ┌───────────┐
-   │  .pcap    │  raw capture, per-scenario
-   └─────┬─────┘
-         │  flow reassembly + feature extraction
-         ▼
-   ┌───────────┐
-   │  dataset  │  labelled feature vectors (CSV / .npz)
-   └─────┬─────┘
-         │  split, scale, reduce dimensionality
-         ├──────────────────────┬──────────────────────┐
-         ▼                      ▼                      │
-  ┌─────────────┐        ┌─────────────┐               │
-  │  NumPy MLP  │        │ PennyLane   │               │
-  │ (classical) │        │   VQC       │               │
-  └──────┬──────┘        └──────┬──────┘               │
-         └───────────┬──────────┘                      │
-                     ▼                                 │
-              ┌─────────────┐                          │
-              │ evaluation  │ ◄────────────────────────┘
-              └─────────────┘  metrics, curves, cost accounting
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/pipeline-dark.svg">
+  <img alt="q-ids pipeline" src="docs/pipeline-light.svg" width="100%">
+</picture>
 
 ## Tech stack
 
