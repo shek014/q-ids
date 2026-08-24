@@ -46,19 +46,14 @@ def pr_curve(y_true_binary, scores):
     return np.concatenate([[0.0], recall]), np.concatenate([[1.0], precision])
 
 
-def _trapezoid(y, x):
-    # np.trapz was removed in NumPy 2.3 (renamed np.trapezoid); avoid depending on either name.
-    return float(np.sum((x[1:] - x[:-1]) * (y[1:] + y[:-1]) / 2.0))
-
-
 def roc_auc_score(y_true_binary, scores):
     fpr, tpr = roc_curve(y_true_binary, scores)
-    return _trapezoid(tpr, fpr)
+    return float(np.trapz(tpr, fpr))
 
 
 def pr_auc_score(y_true_binary, scores):
     recall, precision = pr_curve(y_true_binary, scores)
-    return _trapezoid(precision, recall)
+    return float(np.trapz(precision, recall))
 
 
 def summarize(y_true, y_proba, class_names):
