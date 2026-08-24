@@ -1,7 +1,7 @@
 {
   "model": "classical_mlp",
   "param_count": 1140,
-  "train_time_seconds": 1.0570801000000074,
+  "train_time_seconds": 0.9144218000001274,
   "test_accuracy": 1.0,
   "n_features": 16,
   "feature_names": [
