@@ -1,0 +1,12 @@
+# Model training and evaluation (runs anywhere)
+numpy
+pennylane
+pandas
+matplotlib
+pyyaml
+
+# Traffic generation and feature extraction (Linux only — see README > Prerequisites)
+scapy
+
+# Mininet and nmap are installed as system packages, not via pip:
+#   sudo apt install mininet openvswitch-switch nmap tcpdump

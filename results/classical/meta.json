@@ -1,0 +1,46 @@
+{
+  "model": "classical_mlp",
+  "param_count": 1140,
+  "train_time_seconds": 1.0570801000000074,
+  "test_accuracy": 1.0,
+  "n_features": 16,
+  "feature_names": [
+    "duration",
+    "packet_count",
+    "byte_count",
+    "mean_packet_size",
+    "std_packet_size",
+    "packets_per_second",
+    "bytes_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "mean_iat",
+    "std_iat",
+    "unique_dst_ports",
+    "unique_src_ports",
+    "protocol"
+  ],
+  "class_names": [
+    "benign",
+    "dos",
+    "recon",
+    "spoof"
+  ],
+  "config": {
+    "hidden_sizes": [
+      32,
+      16
+    ],
+    "optimizer": "adam",
+    "learning_rate": 0.01,
+    "epochs": 150,
+    "batch_size": 64,
+    "patience": 20,
+    "seed": 0,
+    "val_size": 0.15,
+    "test_size": 0.15,
+    "class_weight": "balanced"
+  }
+}

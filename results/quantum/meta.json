@@ -1,0 +1,52 @@
+{
+  "model": "quantum_vqc",
+  "param_count": 96,
+  "train_time_seconds": 255.37037439999995,
+  "test_accuracy": 0.945,
+  "n_qubits": 8,
+  "pca_explained_variance_ratio": [
+    0.4275978886148035,
+    0.2173074667233481,
+    0.10162400466809449,
+    0.09162181439218421,
+    0.055975888055711874,
+    0.028796952348587843,
+    0.027676701590301948,
+    0.016997134750652104
+  ],
+  "feature_names": [
+    "duration",
+    "packet_count",
+    "byte_count",
+    "mean_packet_size",
+    "std_packet_size",
+    "packets_per_second",
+    "bytes_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "mean_iat",
+    "std_iat",
+    "unique_dst_ports",
+    "unique_src_ports",
+    "protocol"
+  ],
+  "class_names": [
+    "benign",
+    "dos",
+    "recon",
+    "spoof"
+  ],
+  "config": {
+    "n_qubits": 8,
+    "n_layers": 4,
+    "learning_rate": 0.05,
+    "epochs": 30,
+    "batch_size": 16,
+    "patience": 8,
+    "seed": 0,
+    "val_size": 0.15,
+    "test_size": 0.15
+  }
+}

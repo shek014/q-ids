@@ -1,0 +1,10 @@
+n_qubits: 8       # PCA-reduced feature count fed to the circuit — see README > The dimensionality constraint
+n_layers: 4
+learning_rate: 0.05
+epochs: 30
+batch_size: 16
+patience: 8
+seed: 0
+
+val_size: 0.15    # must match configs/mlp.yaml so both models train/test on identical splits
+test_size: 0.15
