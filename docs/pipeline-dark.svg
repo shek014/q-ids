@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 830" width="1080" height="830" role="img" aria-label="q-ids pipeline diagram">
+<defs><marker id="ah-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#48505b"></path></marker></defs>
+<rect width="1080" height="830" fill="#0d1117"></rect>
+<rect x="170" y="48" width="300" height="76" rx="12" fill="#161b22" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="74" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">01</text>
+<text x="194" y="82" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">Mininet topology</text>
+<text x="194" y="105" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">emulated hosts · switches · links</text>
+<text x="640" y="80" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">virtual LAN inside RFC 1918 space</text>
+<text x="640" y="101" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">the problem-space environment</text>
+<rect x="170" y="156" width="300" height="76" rx="12" fill="#161b22" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="182" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">02</text>
+<text x="194" y="190" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">Traffic drive</text>
+<text x="194" y="213" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">benign + attack, labelled at source</text>
+<text x="640" y="188" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">benign — iperf, curl, ping, app flows</text>
+<text x="640" y="209" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">attack — Nmap scans, Scapy floods, spoofing</text>
+<rect x="170" y="264" width="300" height="76" rx="12" fill="#161b22" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="290" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">03</text>
+<text x="194" y="298" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">.pcap</text>
+<text x="194" y="321" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">raw capture, one per scenario</text>
+<text x="640" y="296" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">tcpdump on switch / host interfaces</text>
+<rect x="170" y="372" width="300" height="76" rx="12" fill="#161b22" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="398" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">04</text>
+<text x="194" y="406" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">dataset</text>
+<text x="194" y="429" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">labelled feature vectors — CSV / .npz</text>
+<text x="640" y="404" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">flow reassembly + feature extraction</text>
+<rect x="170" y="480" width="300" height="76" rx="12" fill="#161b22" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="506" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">05</text>
+<text x="194" y="514" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">preprocess</text>
+<text x="194" y="537" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">split · scale · reduce</text>
+<text x="640" y="512" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">stratified, leakage-safe splits</text>
+<text x="640" y="533" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">PCA / ranked selection down to n = qubits</text>
+<line x1="320" y1="124" x2="320" y2="149" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<line x1="320" y1="232" x2="320" y2="257" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<line x1="320" y1="340" x2="320" y2="365" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<line x1="320" y1="448" x2="320" y2="473" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<path d="M 320 556 V 574 H 210 M 320 574 H 430" fill="none" stroke="#48505b" stroke-width="1.5"></path>
+<line x1="210" y1="574" x2="210" y2="593" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<line x1="430" y1="574" x2="430" y2="593" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<text x="110" y="554" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="start" letter-spacing="1.5">06</text>
+<rect x="110" y="600" width="200" height="76" rx="12" fill="#141c27" stroke="#79aef7" stroke-width="1.25"></rect>
+<text x="132" y="634" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="18" font-weight="600" fill="#79aef7" text-anchor="start">NumPy MLP</text>
+<text x="132" y="657" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">classical</text>
+<rect x="330" y="600" width="200" height="76" rx="12" fill="#1b1625" stroke="#c09ae8" stroke-width="1.25"></rect>
+<text x="352" y="634" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="18" font-weight="600" fill="#c09ae8" text-anchor="start">PennyLane VQC</text>
+<text x="352" y="657" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">quantum-classical</text>
+<text x="640" y="632" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">same reduced feature set — the matched-input regime</text>
+<text x="640" y="653" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">backprop by hand  ·  angle embedding + autodiff</text>
+<path d="M 210 676 V 686 H 430 V 676" fill="none" stroke="#48505b" stroke-width="1.5"></path>
+<line x1="320" y1="686" x2="320" y2="705" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<rect x="170" y="712" width="300" height="76" rx="12" fill="#171c23" stroke="#2c333d" stroke-width="1.25"></rect>
+<text x="450" y="738" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11" font-weight="400" fill="#767f8b" text-anchor="end" letter-spacing="1.5">07</text>
+<text x="194" y="746" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="19" font-weight="600" fill="#e8eef4" text-anchor="start">evaluation</text>
+<text x="194" y="769" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="12.5" font-weight="400" fill="#9aa4b0" text-anchor="start">metrics · curves · cost accounting</text>
+<text x="640" y="744" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">accuracy, FPR, ROC-AUC / PR-AUC, learning curves</text>
+<text x="640" y="765" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,&#34;Segoe UI&#34;,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" fill="#9aa4b0" text-anchor="start">params, circuit depth, wall-clock training time</text>
+<path d="M 470 518 H 578 V 750 H 484" fill="none" stroke="#48505b" stroke-width="1.25" stroke-dasharray="5 5"></path>
+<line x1="484" y1="750" x2="473" y2="750" stroke="#48505b" stroke-width="1.5" marker-end="url(#ah-dark)"></line>
+<text transform="translate(593 634) rotate(-90)" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&#34;Liberation Mono&#34;,monospace" font-size="11.5" fill="#767f8b" text-anchor="middle">native-input · full feature set</text>
+</svg>
