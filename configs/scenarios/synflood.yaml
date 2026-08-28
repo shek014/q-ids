@@ -1,11 +1,22 @@
 name: synflood
-label: dos
 hosts: 4
 duration: 30
 
 capture:
   host: h2
   iface: h2-eth0
+
+# Each flow is labelled by the class of the host that sourced it (see features/extract.py).
+# A source not listed here (e.g. the victim's own replies) is labelled benign by default.
+host_labels:
+  h1: benign
+  h3: dos
+  h4: benign
+
+# iperf needs a server listening on the target before the client connects.
+servers:
+  - host: h2
+    module: traffic.benign.iperf_server
 
 benign:
   - host: h1

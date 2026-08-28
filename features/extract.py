@@ -1,6 +1,9 @@
 """pcap -> flow-level features, matching the schema in features/dataset.py. IPv4 only.
-Expects each *.pcap in --pcap-dir to have a sidecar *.json with {"label": <class name>},
-as written by topology/run.py.
+Expects each *.pcap in --pcap-dir to have a sidecar *.json with an "ip_labels" map
+{<source ip>: <class name>}, as written by topology/run.py. Each flow is labelled by
+its source: an attacker's IP yields attack flows, a benign host's IP yields benign flows,
+so a single mixed capture produces correctly-labelled traffic of multiple classes. A source
+not present in the map (e.g. the victim's own replies) defaults to benign.
 """
 import argparse
 import json
@@ -64,7 +67,9 @@ def _flow_features(key, packets):
     }
 
 
-def extract_pcap(path):
+def extract_pcap(path, ip_labels, default_label="benign"):
+    """Returns (X, y): feature rows and their per-flow labels. Each flow is labelled by its
+    source IP via ip_labels; a source absent from the map falls back to default_label."""
     flows = parse_pcap(path)
     rows = [_flow_features(key, pkts) for key, pkts in flows.items()]
 
@@ -76,12 +81,16 @@ def extract_pcap(path):
         if row["_sport"] is not None:
             src_ports_by_dst[row["_dst"]].add(row["_sport"])
 
-    X = []
+    X, y = [], []
     for row in rows:
         row["unique_dst_ports"] = len(dst_ports_by_src[row["_src"]])
         row["unique_src_ports"] = len(src_ports_by_dst[row["_dst"]])
+        label = ip_labels.get(row["_src"], default_label)
+        if label not in CLASS_NAMES:
+            continue  # unknown class name in the map — skip rather than mislabel
         X.append([row[name] for name in FEATURE_NAMES])
-    return np.array(X, dtype=float)
+        y.append(CLASS_NAMES.index(label))
+    return np.array(X, dtype=float), np.array(y, dtype=int)
 
 
 def main():
@@ -97,18 +106,16 @@ def main():
         if not sidecar.exists():
             print(f"skipping {pcap_path.name}: no sidecar label file")
             continue
-        label = json.loads(sidecar.read_text())["label"]
-        if label not in CLASS_NAMES:
-            print(f"skipping {pcap_path.name}: unknown label {label!r}")
-            continue
+        ip_labels = json.loads(sidecar.read_text()).get("ip_labels", {})
 
-        X = extract_pcap(pcap_path)
+        X, y = extract_pcap(pcap_path, ip_labels)
         if len(X) == 0:
             print(f"skipping {pcap_path.name}: no flows extracted")
             continue
         X_parts.append(X)
-        y_parts.append(np.full(len(X), CLASS_NAMES.index(label)))
-        print(f"{pcap_path.name}: {len(X)} flows, label={label}")
+        y_parts.append(y)
+        counts = {name: int((y == i).sum()) for i, name in enumerate(CLASS_NAMES) if (y == i).any()}
+        print(f"{pcap_path.name}: {len(X)} flows, {counts}")
 
     if not X_parts:
         raise SystemExit(f"no labelled pcaps found in {pcap_dir}")
