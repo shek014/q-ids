@@ -44,6 +44,16 @@ def run_scenario(scenario_path, out_dir):
         out.mkdir(parents=True, exist_ok=True)
         pcap_path = out / f"{scenario['name']}.pcap"
 
+        # Map each labelled host to its IP so extract.py can label flows by source (see
+        # features/extract.py). Sources not listed default to benign at extraction time.
+        ip_labels = {net.get(h).IP(): label for h, label in scenario.get("host_labels", {}).items()}
+
+        # Long-running servers (e.g. iperf) must be up before clients connect.
+        servers = [net.get(s["host"]).popen(_cmd_for(s["module"], _resolve_args(s.get("args", {}), net)))
+                   for s in scenario.get("servers", [])]
+        if servers:
+            time.sleep(1.0)  # let servers bind before traffic starts
+
         with Capture(iface=cap_cfg["iface"], out_path=str(pcap_path)):
             procs = []
             for role in ("benign", "attack"):
@@ -56,11 +66,15 @@ def run_scenario(scenario_path, out_dir):
                 if p.poll() is None:
                     p.terminate()
 
+        for s in servers:
+            if s.poll() is None:
+                s.terminate()
+
         (out / f"{scenario['name']}.json").write_text(json.dumps({
-            "label": scenario["label"],
             "scenario": scenario["name"],
+            "ip_labels": ip_labels,
         }, indent=2))
-        print(f"wrote {pcap_path}")
+        print(f"wrote {pcap_path}  ({len(ip_labels)} labelled sources)")
     finally:
         net.stop()
 
