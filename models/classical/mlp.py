@@ -120,6 +120,22 @@ class MLP:
     def param_count(self):
         return sum(p.size for p in self._params())
 
+    def _grads(self, X, Y_onehot, sample_w=None):
+        """Gradient of the mean cross-entropy loss w.r.t. every W and b, as (dW, db) per layer.
+        The per-example softmax+CE gradient is (probs - Y); the averaging over the batch happens
+        once, inside Dense.backward (dW/db divide by m). Verified in models.classical.gradcheck."""
+        logits = self._forward(X)
+        probs = softmax(logits)
+        d = probs - Y_onehot
+        if sample_w is not None:
+            d = d * sample_w[:, None]
+        grads = []
+        for layer in reversed(self.layers):
+            d, dW, db = layer.backward(d)
+            grads.append((dW, db))
+        grads.reverse()
+        return grads
+
     def fit(self, X, y, X_val=None, y_val=None, epochs=100, batch_size=32,
             class_weight=None, patience=None, verbose=True, seed=None):
         rng = np.random.default_rng(seed)
@@ -143,20 +159,7 @@ class MLP:
                 xb, yb = X[idx], Y[idx]
                 wb = sample_w[idx] if sample_w is not None else None
 
-                logits = self._forward(xb)
-                probs = softmax(logits)
-
-                d_logits = probs - yb
-                if wb is not None:
-                    d_logits *= wb[:, None]
-                d_logits /= xb.shape[0]
-
-                grads = []
-                d = d_logits
-                for layer in reversed(self.layers):
-                    d, dW, db = layer.backward(d)
-                    grads.append((dW, db))
-                grads.reverse()
+                grads = self._grads(xb, yb, wb)
                 flat_grads = [g for pair in grads for g in pair]
 
                 self.optimizer.step(self._params(), flat_grads)
