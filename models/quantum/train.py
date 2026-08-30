@@ -6,15 +6,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from features.dataset import PCA, StandardScaler, load_dataset, train_val_test_split
+from features.dataset import load_dataset, preprocess, train_val_test_split
 from models.quantum.vqc import VQC
-
-
-def scale_to_angles(X, ref_min, ref_max, bound=np.pi):
-    """Map PCA-reduced features into [-bound, bound] so they behave as sane rotation
-    angles for AngleEmbedding — fit range comes from the train split only."""
-    span = np.clip(ref_max - ref_min, 1e-8, None)
-    return (X - ref_min) / span * (2 * bound) - bound
 
 
 def run(data_path, config_path, out_dir):
@@ -26,17 +19,11 @@ def run(data_path, config_path, out_dir):
         X, y, val_size=cfg["val_size"], test_size=cfg["test_size"], seed=cfg["seed"]
     )
 
-    scaler = StandardScaler().fit(X_train)
-    X_train, X_val, X_test = scaler.transform(X_train), scaler.transform(X_val), scaler.transform(X_test)
-
+    # standardize -> PCA down to the qubit budget -> rescale into angle range for AngleEmbedding.
     n_qubits = cfg["n_qubits"]
-    pca = PCA(n_components=n_qubits).fit(X_train)
-    X_train, X_val, X_test = pca.transform(X_train), pca.transform(X_val), pca.transform(X_test)
-
-    ref_min, ref_max = X_train.min(axis=0), X_train.max(axis=0)
-    X_train = scale_to_angles(X_train, ref_min, ref_max)
-    X_val = scale_to_angles(X_val, ref_min, ref_max)
-    X_test = scale_to_angles(X_test, ref_min, ref_max)
+    (X_train, X_val, X_test), pre = preprocess(
+        (X_train, X_val, X_test), n_components=n_qubits, to_angles=True
+    )
 
     model = VQC(n_qubits=n_qubits, n_classes=len(class_names), n_layers=cfg["n_layers"],
                 learning_rate=cfg["learning_rate"], seed=cfg["seed"])
@@ -60,11 +47,14 @@ def run(data_path, config_path, out_dir):
     np.savez(out / "test_predictions.npz", y_true=y_test, y_proba=y_proba)
     (out / "meta.json").write_text(json.dumps({
         "model": "quantum_vqc",
+        "input_mode": "matched",
         "param_count": model.param_count(),
         "train_time_seconds": train_time,
         "test_accuracy": test_acc,
+        "n_features": X_train.shape[1],
         "n_qubits": n_qubits,
-        "pca_explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
+        "pca_components": n_qubits,
+        "pca_explained_variance_ratio": pre["explained_variance_ratio"],
         "feature_names": feature_names,
         "class_names": class_names,
         "config": cfg,

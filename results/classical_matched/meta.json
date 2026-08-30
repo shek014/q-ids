@@ -1,11 +1,10 @@
 {
-  "model": "quantum_vqc",
+  "model": "classical_mlp",
   "input_mode": "matched",
-  "param_count": 96,
-  "train_time_seconds": 204.99534390000008,
-  "test_accuracy": 0.945,
+  "param_count": 884,
+  "train_time_seconds": 0.8627754999997705,
+  "test_accuracy": 1.0,
   "n_features": 8,
-  "n_qubits": 8,
   "pca_components": 8,
   "pca_explained_variance_ratio": [
     0.4275978886148035,
@@ -42,14 +41,18 @@
     "spoof"
   ],
   "config": {
-    "n_qubits": 8,
-    "n_layers": 4,
-    "learning_rate": 0.05,
-    "epochs": 30,
-    "batch_size": 16,
-    "patience": 8,
+    "hidden_sizes": [
+      32,
+      16
+    ],
+    "optimizer": "adam",
+    "learning_rate": 0.01,
+    "epochs": 150,
+    "batch_size": 64,
+    "patience": 20,
     "seed": 0,
     "val_size": 0.15,
-    "test_size": 0.15
+    "test_size": 0.15,
+    "class_weight": "balanced"
   }
 }

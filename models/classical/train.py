@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from features.dataset import CLASS_NAMES, StandardScaler, load_dataset, train_val_test_split
+from features.dataset import load_dataset, preprocess, train_val_test_split
 from models.classical.mlp import MLP
 
 
@@ -16,7 +16,7 @@ def balanced_class_weight(y):
     return {int(c): n / (len(classes) * count) for c, count in zip(classes, counts)}
 
 
-def run(data_path, config_path, out_dir):
+def run(data_path, config_path, out_dir, pca_components=None):
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
 
@@ -25,8 +25,11 @@ def run(data_path, config_path, out_dir):
         X, y, val_size=cfg["val_size"], test_size=cfg["test_size"], seed=cfg["seed"]
     )
 
-    scaler = StandardScaler().fit(X_train)
-    X_train, X_val, X_test = scaler.transform(X_train), scaler.transform(X_val), scaler.transform(X_test)
+    # native input = all raw features; matched input = the same PCA components the VQC sees.
+    (X_train, X_val, X_test), pre = preprocess(
+        (X_train, X_val, X_test), n_components=pca_components
+    )
+    input_mode = "matched" if pca_components is not None else "native"
 
     class_weight = balanced_class_weight(y_train) if cfg.get("class_weight") == "balanced" else None
 
@@ -43,7 +46,8 @@ def run(data_path, config_path, out_dir):
 
     y_proba = model.predict_proba(X_test)
     test_acc = float(np.mean(np.argmax(y_proba, axis=1) == y_test))
-    print(f"test accuracy: {test_acc:.4f}  |  params: {model.param_count()}  |  train time: {train_time:.2f}s")
+    print(f"[{input_mode}] test accuracy: {test_acc:.4f}  |  params: {model.param_count()}  "
+          f"|  features: {X_train.shape[1]}  |  train time: {train_time:.2f}s")
 
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -52,10 +56,13 @@ def run(data_path, config_path, out_dir):
     np.savez(out / "test_predictions.npz", y_true=y_test, y_proba=y_proba)
     (out / "meta.json").write_text(json.dumps({
         "model": "classical_mlp",
+        "input_mode": input_mode,
         "param_count": model.param_count(),
         "train_time_seconds": train_time,
         "test_accuracy": test_acc,
         "n_features": X_train.shape[1],
+        "pca_components": pca_components,
+        "pca_explained_variance_ratio": pre["explained_variance_ratio"],
         "feature_names": feature_names,
         "class_names": class_names,
         "config": cfg,
@@ -68,8 +75,11 @@ def main():
     parser.add_argument("--data", default="data/dataset.npz")
     parser.add_argument("--config", default="configs/mlp.yaml")
     parser.add_argument("--out", default="results/classical")
+    parser.add_argument("--pca-components", type=int, default=None,
+                        help="reduce to N PCA components (matched-input regime, e.g. the VQC's "
+                             "qubit count); omit to train on all raw features (native input)")
     args = parser.parse_args()
-    run(args.data, args.config, args.out)
+    run(args.data, args.config, args.out, pca_components=args.pca_components)
 
 
 if __name__ == "__main__":
