@@ -85,3 +85,40 @@ class PCA:
 
     def fit_transform(self, X):
         return self.fit(X).transform(X)
+
+
+def preprocess(splits, n_components=None, to_angles=False, angle_bound=np.pi):
+    """Shared feature preprocessing for both trainers, so the classical and quantum models
+    can be run on identical inputs (see README > The dimensionality constraint).
+
+    splits is (X_train, X_val, X_test). Every transform is fit on the train split only and
+    reused for val/test, so no information leaks across the split boundary:
+      1. standardize (z-score);
+      2. if n_components is set, reduce to that many PCA components;
+      3. if to_angles, rescale each feature into [-angle_bound, angle_bound] — required by the
+         VQC's AngleEmbedding, a monotonic per-feature rescale that carries no extra information
+         (so an MLP on the PCA components and a VQC on the angle-scaled PCA components see the
+         same information — the matched-input comparison).
+
+    Returns (transformed splits, info) where info carries the fitted scaler/pca and, when PCA
+    is used, the explained-variance ratio.
+    """
+    X_train, X_val, X_test = splits
+    scaler = StandardScaler().fit(X_train)
+    parts = [scaler.transform(X) for X in (X_train, X_val, X_test)]
+
+    info = {"scaler": scaler, "pca": None, "n_components": n_components,
+            "explained_variance_ratio": None, "angle_scaled": to_angles}
+
+    if n_components is not None:
+        pca = PCA(n_components).fit(parts[0])
+        parts = [pca.transform(X) for X in parts]
+        info["pca"] = pca
+        info["explained_variance_ratio"] = pca.explained_variance_ratio_.tolist()
+
+    if to_angles:
+        ref_min, ref_max = parts[0].min(axis=0), parts[0].max(axis=0)
+        span = np.clip(ref_max - ref_min, 1e-8, None)
+        parts = [(X - ref_min) / span * (2 * angle_bound) - angle_bound for X in parts]
+
+    return parts, info
