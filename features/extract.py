@@ -1,9 +1,11 @@
 """pcap -> flow-level features, matching the schema in features/dataset.py. IPv4 only.
-Expects each *.pcap in --pcap-dir to have a sidecar *.json with an "ip_labels" map
-{<source ip>: <class name>}, as written by topology/run.py. Each flow is labelled by
-its source: an attacker's IP yields attack flows, a benign host's IP yields benign flows,
-so a single mixed capture produces correctly-labelled traffic of multiple classes. A source
-not present in the map (e.g. the victim's own replies) defaults to benign.
+Expects each *.pcap in --pcap-dir to have a sidecar *.json with a "mac_labels" map
+{<source MAC>: <class name>}, as written by topology/run.py. Each flow is labelled by the
+Ethernet source MAC of the host that sent it — NOT the source IP, because the attacks spoof
+their IP (DoS floods randomize the source address; ARP poisoning forges the ARP psrc). The
+source MAC is the host's real hardware address, which the generators do not spoof, so it
+correctly attributes spoofed-IP attack flows to the attacker while the victim's replies stay
+benign. A source MAC not present in the map (e.g. the victim's own replies) defaults to benign.
 """
 import argparse
 import json
@@ -11,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-from scapy.all import ARP, ICMP, IP, TCP, UDP, PcapReader
+from scapy.all import ARP, ICMP, IP, TCP, UDP, Ether, PcapReader
 
 from features.dataset import CLASS_NAMES, FEATURE_NAMES, save_dataset
 
@@ -39,7 +41,8 @@ def parse_pcap(path):
         if key is None:
             continue
         flags = str(pkt[TCP].flags) if pkt.haslayer(TCP) else ""
-        flows[key].append({"ts": float(pkt.time), "length": len(pkt), "flags": flags})
+        src_mac = pkt[Ether].src.lower() if pkt.haslayer(Ether) else None
+        flows[key].append({"ts": float(pkt.time), "length": len(pkt), "flags": flags, "src_mac": src_mac})
     return flows
 
 
@@ -64,12 +67,17 @@ def _flow_features(key, packets):
         "mean_iat": iat.mean(), "std_iat": iat.std(),
         "protocol": PROTO_CODE[proto],
         "_src": src, "_dst": dst, "_dport": dport, "_sport": sport,
+        # all packets in a directed 5-tuple flow come from one host, so any packet's src MAC
+        # identifies the sender — even when the source IP is spoofed.
+        "_src_mac": packets[0]["src_mac"],
     }
 
 
-def extract_pcap(path, ip_labels, default_label="benign"):
+def extract_pcap(path, mac_labels, default_label="benign"):
     """Returns (X, y): feature rows and their per-flow labels. Each flow is labelled by its
-    source IP via ip_labels; a source absent from the map falls back to default_label."""
+    Ethernet source MAC via mac_labels (keys lower-cased); a sender absent from the map falls
+    back to default_label. MAC, not IP, because the attacks spoof their source IP."""
+    mac_labels = {k.lower(): v for k, v in mac_labels.items()}
     flows = parse_pcap(path)
     rows = [_flow_features(key, pkts) for key, pkts in flows.items()]
 
@@ -85,7 +93,7 @@ def extract_pcap(path, ip_labels, default_label="benign"):
     for row in rows:
         row["unique_dst_ports"] = len(dst_ports_by_src[row["_src"]])
         row["unique_src_ports"] = len(src_ports_by_dst[row["_dst"]])
-        label = ip_labels.get(row["_src"], default_label)
+        label = mac_labels.get(row["_src_mac"], default_label)
         if label not in CLASS_NAMES:
             continue  # unknown class name in the map — skip rather than mislabel
         X.append([row[name] for name in FEATURE_NAMES])
@@ -106,9 +114,9 @@ def main():
         if not sidecar.exists():
             print(f"skipping {pcap_path.name}: no sidecar label file")
             continue
-        ip_labels = json.loads(sidecar.read_text()).get("ip_labels", {})
+        mac_labels = json.loads(sidecar.read_text()).get("mac_labels", {})
 
-        X, y = extract_pcap(pcap_path, ip_labels)
+        X, y = extract_pcap(pcap_path, mac_labels)
         if len(X) == 0:
             print(f"skipping {pcap_path.name}: no flows extracted")
             continue

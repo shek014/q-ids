@@ -44,9 +44,10 @@ def run_scenario(scenario_path, out_dir):
         out.mkdir(parents=True, exist_ok=True)
         pcap_path = out / f"{scenario['name']}.pcap"
 
-        # Map each labelled host to its IP so extract.py can label flows by source (see
-        # features/extract.py). Sources not listed default to benign at extraction time.
-        ip_labels = {net.get(h).IP(): label for h, label in scenario.get("host_labels", {}).items()}
+        # Map each labelled host to its MAC so extract.py can label flows by the real sender
+        # (see features/extract.py). MAC, not IP, because the attacks spoof their source IP —
+        # the generators never spoof the Ethernet source MAC. Hosts not listed default to benign.
+        mac_labels = {net.get(h).MAC(): label for h, label in scenario.get("host_labels", {}).items()}
 
         # Long-running servers (e.g. iperf) must be up before clients connect.
         servers = [net.get(s["host"]).popen(_cmd_for(s["module"], _resolve_args(s.get("args", {}), net)))
@@ -72,9 +73,9 @@ def run_scenario(scenario_path, out_dir):
 
         (out / f"{scenario['name']}.json").write_text(json.dumps({
             "scenario": scenario["name"],
-            "ip_labels": ip_labels,
+            "mac_labels": mac_labels,
         }, indent=2))
-        print(f"wrote {pcap_path}  ({len(ip_labels)} labelled sources)")
+        print(f"wrote {pcap_path}  ({len(mac_labels)} labelled sources)")
     finally:
         net.stop()
 
