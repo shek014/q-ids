@@ -1,0 +1,33 @@
+name: spoof
+hosts: 4
+duration: 30
+
+capture:
+  host: h2
+  iface: h2-eth0
+
+# h4 poisons h1's ARP cache, forging that the victim h2's IP lives at h4's MAC. The forged
+# replies carry a spoofed ARP psrc (h2's IP) but h4's real source MAC, so labelling by MAC
+# attributes them to h4 -> spoof (labelling by IP would have blamed the impersonated victim).
+host_labels:
+  h1: benign
+  h3: benign
+  h4: spoof
+
+servers:
+  - host: h2
+    module: traffic.benign.iperf_server
+
+benign:
+  - host: h1
+    module: traffic.benign.ping_flow
+    args: {target: "$h2", count: 25, interval: 1.0}
+  - host: h3
+    module: traffic.benign.iperf_flow
+    args: {target: "$h2", duration: 25}
+
+attack:
+  - host: h4
+    module: traffic.attack.arp_spoof
+    # iface is h4's own link (a literal, not a "$host" IP reference); target_ip/victim_ip resolve to IPs.
+    args: {iface: h4-eth0, target_ip: "$h1", victim_ip: "$h2", interval: 2, duration: 30}
