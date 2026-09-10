@@ -1,0 +1,29 @@
+name: benign
+hosts: 4
+duration: 30
+
+capture:
+  host: h2
+  iface: h2-eth0
+
+# No attack traffic — a clean benign baseline. Every source is benign; the victim's own
+# replies default to benign too.
+host_labels:
+  h1: benign
+  h3: benign
+  h4: benign
+
+servers:
+  - host: h2
+    module: traffic.benign.iperf_server
+
+benign:
+  - host: h1
+    module: traffic.benign.ping_flow
+    args: {target: "$h2", count: 25, interval: 1.0}
+  - host: h3
+    module: traffic.benign.iperf_flow
+    args: {target: "$h2", duration: 25}
+  - host: h4
+    module: traffic.benign.ping_flow
+    args: {target: "$h2", count: 25, interval: 0.5}

@@ -1,0 +1,31 @@
+name: recon
+hosts: 4
+duration: 45          # nmap needs time to sweep the port range; terminated if it runs over
+
+capture:
+  host: h2
+  iface: h2-eth0
+
+# Flows are labelled by the source host's MAC (see features/extract.py). Hosts not listed
+# here (e.g. the victim's own replies) default to benign.
+host_labels:
+  h1: benign
+  h3: recon
+  h4: benign
+
+servers:
+  - host: h2
+    module: traffic.benign.iperf_server
+
+benign:
+  - host: h1
+    module: traffic.benign.ping_flow
+    args: {target: "$h2", count: 40, interval: 1.0}
+  - host: h4
+    module: traffic.benign.iperf_flow
+    args: {target: "$h2", duration: 40}
+
+attack:
+  - host: h3
+    module: traffic.attack.port_scan
+    args: {target: "$h2", ports: "1-1024", scan_type: syn, timing: 4}
