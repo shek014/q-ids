@@ -55,7 +55,8 @@ def run_scenario(scenario_path, out_dir):
         if servers:
             time.sleep(1.0)  # let servers bind before traffic starts
 
-        with Capture(iface=cap_cfg["iface"], out_path=str(pcap_path)):
+        # capture inside the capture host's namespace (its interface isn't visible from root)
+        with Capture(iface=cap_cfg["iface"], out_path=str(pcap_path), node=net.get(cap_cfg["host"])):
             procs = []
             for role in ("benign", "attack"):
                 for flow in scenario.get(role, []):

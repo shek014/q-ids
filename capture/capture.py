@@ -8,22 +8,34 @@ import time
 class Capture:
     """Context manager wrapping a background tcpdump process.
 
-    with Capture(iface="h2-eth0", out_path="capture/run.pcap") as cap:
-        ...run traffic...
+    A Mininet host's interface (e.g. h2-eth0) lives inside that host's network namespace, so
+    tcpdump must run *inside* the same namespace or it won't see the interface. Pass the Mininet
+    host as `node` and the capture is launched via node.popen (mnexec into its namespace):
+
+        with Capture(iface="h2-eth0", out_path="capture/run.pcap", node=net.get("h2")):
+            ...run traffic...
+
+    Without `node` it falls back to a plain root-namespace tcpdump (only correct for a
+    root-namespace interface such as a switch port).
     """
 
-    def __init__(self, iface, out_path, bpf_filter=None, snaplen=262144):
+    def __init__(self, iface, out_path, bpf_filter=None, snaplen=262144, node=None):
         self.iface = iface
         self.out_path = out_path
         self.bpf_filter = bpf_filter
         self.snaplen = snaplen
+        self.node = node
         self._proc = None
 
     def start(self):
         cmd = ["tcpdump", "-i", self.iface, "-w", self.out_path, "-s", str(self.snaplen), "-U"]
         if self.bpf_filter:
             cmd.append(self.bpf_filter)
-        self._proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if self.node is not None:
+            # run inside the host's network namespace so it can see the host interface
+            self._proc = self.node.popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            self._proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(0.5)  # give tcpdump a moment to attach before traffic starts
         return self
 
