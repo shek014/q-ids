@@ -19,7 +19,10 @@ class Capture:
     root-namespace interface such as a switch port).
     """
 
-    def __init__(self, iface, out_path, bpf_filter=None, snaplen=262144, node=None):
+    def __init__(self, iface, out_path, bpf_filter=None, snaplen=128, node=None):
+        # snaplen 128 captures only the headers we need (Ethernet + IP + TCP/UDP/ICMP/ARP),
+        # not payloads — keeps pcaps small. features/extract.py uses the packet's recorded
+        # wire length (not the truncated capture length) so size features stay correct.
         self.iface = iface
         self.out_path = out_path
         self.bpf_filter = bpf_filter
