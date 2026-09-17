@@ -139,8 +139,11 @@ pip install -r requirements.txt
 Mininet and Nmap are system packages, installed outside the virtualenv (Linux only):
 
 ```bash
-sudo apt install mininet openvswitch-switch nmap tcpdump
+sudo apt install mininet openvswitch-switch nmap tcpdump ethtool
 ```
+(`ethtool` is used to disable NIC offloads during capture so flows are recorded as real
+MTU-sized packets. On Arch: `sudo pacman -S openvswitch nmap tcpdump ethtool iperf3` plus
+Mininet from the AUR.)
 
 ## Usage
 

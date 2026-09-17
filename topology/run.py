@@ -40,6 +40,14 @@ def run_scenario(scenario_path, out_dir):
     net = Mininet(topo=IDSTopo(n_hosts=scenario["hosts"]), controller=OVSController, link=TCLink)
     net.start()
 
+    # Disable NIC offloads so captures record real MTU-sized packets, not GSO/TSO super-segments.
+    # Without this a bulk flow is captured as a handful of ~60 KB "packets", which distorts the
+    # per-packet features (packet_count, packet sizes, rates, inter-arrival times). Needs ethtool.
+    for h in net.hosts:
+        for intf in h.intfList():
+            if intf.name != "lo":
+                h.cmd(f"ethtool -K {intf.name} gso off tso off gro off lro off")
+
     try:
         cap_cfg = scenario["capture"]
         out = Path(out_dir)
@@ -51,6 +59,11 @@ def run_scenario(scenario_path, out_dir):
         # the generators never spoof the Ethernet source MAC. Hosts not listed default to benign.
         mac_labels = {net.get(h).MAC(): label for h, label in scenario.get("host_labels", {}).items()}
 
+        # The capture host (the victim) also emits its own traffic — e.g. SYN-ACK replies to a
+        # spoofed flood — which we don't want polluting the benign class. Record its MAC so
+        # extract.py drops flows sourced by it (see features/extract.py).
+        cap_host = net.get(cap_cfg["host"])
+
         # Long-running servers (e.g. iperf) must be up before clients connect.
         servers = [net.get(s["host"]).popen(_cmd_for(s["module"], _resolve_args(s.get("args", {}), net)))
                    for s in scenario.get("servers", [])]
@@ -58,7 +71,7 @@ def run_scenario(scenario_path, out_dir):
             time.sleep(1.0)  # let servers bind before traffic starts
 
         # capture inside the capture host's namespace (its interface isn't visible from root)
-        with Capture(iface=cap_cfg["iface"], out_path=str(pcap_path), node=net.get(cap_cfg["host"])):
+        with Capture(iface=cap_cfg["iface"], out_path=str(pcap_path), node=cap_host):
             procs = []
             for role in ("benign", "attack"):
                 for flow in scenario.get(role, []):
@@ -77,6 +90,7 @@ def run_scenario(scenario_path, out_dir):
         (out / f"{scenario['name']}.json").write_text(json.dumps({
             "scenario": scenario["name"],
             "mac_labels": mac_labels,
+            "exclude_macs": [cap_host.MAC()],
         }, indent=2))
         print(f"wrote {pcap_path}  ({len(mac_labels)} labelled sources)")
     finally:
