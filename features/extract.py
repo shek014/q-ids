@@ -76,11 +76,14 @@ def _flow_features(key, packets):
     }
 
 
-def extract_pcap(path, mac_labels, default_label="benign"):
+def extract_pcap(path, mac_labels, exclude_macs=(), default_label="benign"):
     """Returns (X, y): feature rows and their per-flow labels. Each flow is labelled by its
     Ethernet source MAC via mac_labels (keys lower-cased); a sender absent from the map falls
-    back to default_label. MAC, not IP, because the attacks spoof their source IP."""
+    back to default_label. MAC, not IP, because the attacks spoof their source IP. Flows whose
+    source MAC is in exclude_macs are dropped entirely (e.g. the capture/victim host's own
+    replies, which shouldn't count as benign traffic)."""
     mac_labels = {k.lower(): v for k, v in mac_labels.items()}
+    exclude = {m.lower() for m in exclude_macs}
     flows = parse_pcap(path)
     rows = [_flow_features(key, pkts) for key, pkts in flows.items()]
 
@@ -94,6 +97,8 @@ def extract_pcap(path, mac_labels, default_label="benign"):
 
     X, y = [], []
     for row in rows:
+        if row["_src_mac"] in exclude:
+            continue  # drop the capture/victim host's own traffic
         row["unique_dst_ports"] = len(dst_ports_by_src[row["_src"]])
         row["unique_src_ports"] = len(src_ports_by_dst[row["_dst"]])
         label = mac_labels.get(row["_src_mac"], default_label)
@@ -117,9 +122,11 @@ def main():
         if not sidecar.exists():
             print(f"skipping {pcap_path.name}: no sidecar label file")
             continue
-        mac_labels = json.loads(sidecar.read_text()).get("mac_labels", {})
+        sidecar_data = json.loads(sidecar.read_text())
+        mac_labels = sidecar_data.get("mac_labels", {})
+        exclude_macs = sidecar_data.get("exclude_macs", [])
 
-        X, y = extract_pcap(pcap_path, mac_labels)
+        X, y = extract_pcap(pcap_path, mac_labels, exclude_macs=exclude_macs)
         if len(X) == 0:
             print(f"skipping {pcap_path.name}: no flows extracted")
             continue
