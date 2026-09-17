@@ -42,7 +42,10 @@ def parse_pcap(path):
             continue
         flags = str(pkt[TCP].flags) if pkt.haslayer(TCP) else ""
         src_mac = pkt[Ether].src.lower() if pkt.haslayer(Ether) else None
-        flows[key].append({"ts": float(pkt.time), "length": len(pkt), "flags": flags, "src_mac": src_mac})
+        # wirelen = original on-wire length; len(pkt) would be the truncated capture length
+        # when tcpdump uses a small snaplen (see capture/capture.py), corrupting size features.
+        length = pkt.wirelen if getattr(pkt, "wirelen", None) else len(pkt)
+        flows[key].append({"ts": float(pkt.time), "length": length, "flags": flags, "src_mac": src_mac})
     return flows
 
 

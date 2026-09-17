@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 from mininet.net import Mininet
 from mininet.node import OVSController
+from mininet.link import TCLink
 
 from capture.capture import Capture
 from topology.topo import IDSTopo
@@ -35,7 +36,8 @@ def run_scenario(scenario_path, out_dir):
     with open(scenario_path) as f:
         scenario = yaml.safe_load(f)
 
-    net = Mininet(topo=IDSTopo(n_hosts=scenario["hosts"]), controller=OVSController)
+    # TCLink applies the per-link bandwidth cap from IDSTopo (keeps captures bounded).
+    net = Mininet(topo=IDSTopo(n_hosts=scenario["hosts"]), controller=OVSController, link=TCLink)
     net.start()
 
     try:
