@@ -6,7 +6,10 @@ FEATURE_NAMES = [
     "rst_count", "mean_iat", "std_iat", "unique_dst_ports", "unique_src_ports", "protocol",
 ]
 
-CLASS_NAMES = ["benign", "dos", "recon", "spoof"]
+# spoof (ARP) dropped: it's an L2 attack that the flow-feature IDS separates trivially by the
+# categorical `protocol` feature, so it can't participate in the near-boundary evasion study.
+# The study centres on dos/recon, whose giveaways are continuous, realizably-dial-able footprints.
+CLASS_NAMES = ["benign", "dos", "recon"]
 
 
 def save_dataset(path, X, y, feature_names=FEATURE_NAMES, class_names=CLASS_NAMES):

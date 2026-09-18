@@ -14,7 +14,10 @@ attack:
     args:
       target: "$h1"
       target_port: {choice: [80, 443, 22, 8080, 53]}
-      rate: {range: [200, 800]}
+      # rate floor 50 keeps the flood functional; n_source_ports spans stealthy (1) to obvious
+      # (1500) — the near-boundary knob on the unique_src_ports giveaway (functionally free).
+      rate: {range: [50, 800]}
+      n_source_ports: {choice: [1, 5, 20, 100, 500, 1500]}
       duration: 30
 
 benign:
