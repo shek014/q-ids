@@ -1,32 +1,26 @@
 name: synflood
-hosts: 4
+hosts: 8              # h1 victim/capture, h2-h6 attackers (5), h7-h8 benign
 duration: 30
 
-capture:
-  host: h2
-  iface: h2-eth0
+capture: {host: h1, iface: h1-eth0}
 
-# Each flow is labelled by the class of the host that sourced it (see features/extract.py).
-# A source not listed here (e.g. the victim's own replies) is labelled benign by default.
-host_labels:
-  h1: benign
-  h3: dos
-  h4: benign
-
-# iperf needs a server listening on the target before the client connects.
 servers:
-  - host: h2
-    module: traffic.benign.iperf_server
-
-benign:
-  - host: h1
-    module: traffic.benign.ping_flow
-    args: {target: "$h2", count: 25, interval: 1.0}
-  - host: h4
-    module: traffic.benign.iperf_flow
-    args: {target: "$h2", duration: 25}
+  - {host: h1, module: traffic.benign.iperf_server}
 
 attack:
-  - host: h3
+  - hosts: [h2, h3, h4, h5, h6]
+    class: dos
     module: traffic.attack.syn_flood
-    args: {target: "$h2", target_port: 80, rate: 500, duration: 30}
+    args:
+      target: "$h1"
+      target_port: {choice: [80, 443, 22, 8080, 53]}
+      rate: {range: [200, 800]}
+      duration: 30
+
+benign:
+  - hosts: [h7]
+    module: traffic.benign.ping_flow
+    args: {target: "$h1", count: {range: [20, 50]}, interval: {range: [0.5, 1.5]}}
+  - hosts: [h8]
+    module: traffic.benign.iperf_flow
+    args: {target: "$h1", duration: {range: [15, 25]}}

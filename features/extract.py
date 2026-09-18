@@ -35,6 +35,11 @@ def _packet(pkt):
             "sport": None, "dport": None, "src_mac": src_mac}
 
     if pkt.haslayer(ARP):
+        # Keep forged ARP replies (op=2, the spoof attack); drop "who-has" resolution requests
+        # (op=1), which are just address resolution Scapy emits before a flood/scan and would
+        # otherwise become stray 1-packet flows labelled with the attacker's class.
+        if pkt[ARP].op != 2:
+            return None
         return ("arp", src_mac, pkt[ARP].pdst), info
     if not pkt.haslayer(IP):
         return None
