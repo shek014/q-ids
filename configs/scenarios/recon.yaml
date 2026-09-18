@@ -13,9 +13,11 @@ attack:
     module: traffic.attack.port_scan
     args:
       target: "$h1"
-      ports: {choice: ["1-1024", "1-500", "20-2000", "1-100"]}
+      # port range spans obvious sweeps (1-1024) to stealthy few-port probes (1-5) — the
+      # near-boundary knob on the unique_dst_ports giveaway (degrades coverage gracefully).
+      ports: {choice: ["1-1024", "1-500", "1-100", "1-20", "1-5", "20-40"]}
       scan_type: {choice: [syn, fin, xmas]}
-      rate: {range: [200, 800]}
+      rate: {range: [50, 800]}
 
 benign:
   - hosts: [h7]
