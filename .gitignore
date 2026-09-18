@@ -186,3 +186,4 @@ data/*
 !data/.gitkeep
 capture/*.pcap
 capture/*.pcapng
+capture/*.json
