@@ -34,7 +34,7 @@ attack:
     args: {target: "$h2", target_port: 80, rate: 500, duration: 40}
   - host: h4
     module: traffic.attack.port_scan
-    args: {target: "$h2", ports: "1-1024", scan_type: syn, timing: 4}
+    args: {target: "$h2", ports: "1-1024", scan_type: syn, rate: 500}
   - host: h5
     module: traffic.attack.arp_spoof
     args: {iface: h5-eth0, target_ip: "$h1", victim_ip: "$h2", interval: 2, duration: 40}

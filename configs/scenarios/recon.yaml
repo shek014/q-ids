@@ -28,4 +28,4 @@ benign:
 attack:
   - host: h3
     module: traffic.attack.port_scan
-    args: {target: "$h2", ports: "1-1024", scan_type: syn, timing: 4}
+    args: {target: "$h2", ports: "1-1024", scan_type: syn, rate: 500}

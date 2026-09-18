@@ -1,32 +1,44 @@
-"""Reconnaissance scan via Nmap — wraps the nmap binary. Requires root for SYN/stealth
-scan types. Only point this at hosts inside the emulated Mininet topology.
+"""Port scan via Scapy — sweeps a SYN (or FIN/XMAS/NULL) probe across a range of destination
+ports from the host's real address. Requires root. Only point this at the emulated Mininet hosts.
 
-Evasive variants use nmap's own timing templates and decoys (see README > Threat model):
-  --timing 1        slow-rate scan to blend into the benign statistical envelope
-  --decoys RND:5    scan appears to come from 5 additional random decoy sources
+Scapy rather than nmap: nmap's scans depend on receiving and interpreting the target's replies,
+which stalls against Mininet hosts (closed ports don't refuse cleanly, and raw-socket sniffing
+hangs in the namespace). A Scapy sweep just emits the probes — all we need to generate detectable
+recon traffic: one source hitting many destination ports (high unique_dst_ports, low
+unique_src_ports, which is exactly what distinguishes a scan from a spoofed flood).
 """
 import argparse
-import subprocess
+import time
 
-SCAN_FLAGS = {
-    "syn": "-sS",
-    "connect": "-sT",
-    "fin": "-sF",
-    "xmas": "-sX",
-    "null": "-sN",
-    "udp": "-sU",
-}
+from scapy.all import IP, TCP, RandShort, send
+
+SCAN_FLAGS = {"syn": "S", "fin": "F", "xmas": "FPU", "null": ""}
 
 
-def run(target, ports="1-1024", scan_type="syn", timing=3, decoys=None, verbose=True):
-    cmd = ["nmap", SCAN_FLAGS[scan_type], "-p", ports, "-T", str(timing)]
-    if decoys:
-        cmd += ["-D", decoys]
-    cmd.append(target)
-    result = subprocess.run(cmd, capture_output=True, text=True)
+def _parse_ports(spec):
+    ports = []
+    for part in str(spec).split(","):
+        if "-" in part:
+            a, b = part.split("-")
+            ports.extend(range(int(a), int(b) + 1))
+        else:
+            ports.append(int(part))
+    return ports
+
+
+def run(target, ports="1-1024", scan_type="syn", rate=500, verbose=True):
+    flags = SCAN_FLAGS[scan_type]
+    port_list = _parse_ports(ports)
+    sport = int(RandShort())          # one source port for the whole scan -> unique_src_ports = 1
+    interval = 1.0 / rate if rate > 0 else 0
+    sent = 0
+    for port in port_list:
+        send(IP(dst=target) / TCP(sport=sport, dport=port, flags=flags), verbose=0)
+        sent += 1
+        if interval:
+            time.sleep(interval)
     if verbose:
-        print(result.stdout)
-    return result
+        print(f"port_scan: sent {sent} {scan_type} probes to {target} ports {ports}")
 
 
 def main():
@@ -34,10 +46,9 @@ def main():
     parser.add_argument("--target", required=True)
     parser.add_argument("--ports", default="1-1024")
     parser.add_argument("--scan-type", choices=SCAN_FLAGS.keys(), default="syn")
-    parser.add_argument("--timing", type=int, default=3, choices=range(6))
-    parser.add_argument("--decoys", default=None, help='e.g. "RND:5" for 5 random decoys')
+    parser.add_argument("--rate", type=float, default=500, help="probes per second")
     args = parser.parse_args()
-    run(args.target, args.ports, args.scan_type, args.timing, args.decoys)
+    run(args.target, args.ports, args.scan_type, args.rate)
 
 
 if __name__ == "__main__":
