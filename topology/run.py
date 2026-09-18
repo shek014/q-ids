@@ -16,6 +16,7 @@ per host per run) or {choice: [...]} (picked per host per run).
 import argparse
 import json
 import random
+import subprocess
 import time
 from pathlib import Path
 
@@ -130,7 +131,12 @@ def run_scenario(scenario_path, out_dir, runs=1, seed=0):
         scenario = yaml.safe_load(f)
     for i in range(runs):
         rng = random.Random(f"{scenario['name']}-{seed}-{i}")
-        _run_once(scenario, out_dir, run_id=i, rng=rng)
+        try:
+            _run_once(scenario, out_dir, run_id=i, rng=rng)
+        except Exception as e:
+            # one flaky run shouldn't abort a multi-hour collection; clean up and continue
+            print(f"run {i} failed: {e}")
+            subprocess.run(["mn", "-c"], capture_output=True)
 
 
 def main():
