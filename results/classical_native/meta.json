@@ -2,7 +2,7 @@
   "model": "classical_mlp",
   "input_mode": "native",
   "param_count": 1140,
-  "train_time_seconds": 0.8915218999991339,
+  "train_time_seconds": 0.3676821259996359,
   "test_accuracy": 1.0,
   "n_features": 16,
   "pca_components": null,
