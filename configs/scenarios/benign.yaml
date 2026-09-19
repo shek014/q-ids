@@ -1,19 +1,31 @@
 name: benign
-hosts: 7              # h1 victim/capture, h2-h7 benign generators (no attack)
+hosts: 8              # h1 victim/capture, h2-h8 benign generators (no attack)
 duration: 30
 
 capture: {host: h1, iface: h1-eth0}
 
 servers:
+  # real multi-port services so app_clients have open ports to talk to, plus iperf for bulk flows
+  - {host: h1, module: traffic.benign.services, args: {ports: "80,443,8080,22,3306,5432,8000,9000,25,110"}}
   - {host: h1, module: traffic.benign.iperf_server}
 
 benign:
+  # varied app clients: short connections across several ports, some failing — spans "clearly
+  # normal" to "looks a bit like a small scan / low flood", giving the overlap detection needs.
   - hosts: [h2, h3, h4, h5]
+    module: traffic.benign.app_client
+    args:
+      target: "$h1"
+      open_ports: "80,443,8080,22,3306,5432,8000,9000,25,110"
+      closed_ports: "1234,4321,6666,9999,31337,12345,4444,5555"
+      n_ports: {range: [1, 14]}
+      # up to 1.0 so some clients only hit unavailable services (a realistic "service down, keep
+      # retrying" host) -> ack_count 0, SYN-heavy -> genuinely overlaps a low-rate SYN flood.
+      closed_ratio: {range: [0.0, 1.0]}
+      n_connections: {range: [10, 50]}
+  - hosts: [h6, h7]
     module: traffic.benign.ping_flow
     args: {target: "$h1", count: {range: [20, 50]}, interval: {range: [0.5, 1.5]}}
-  - hosts: [h6]
+  - hosts: [h8]
     module: traffic.benign.iperf_flow
     args: {target: "$h1", duration: {range: [15, 25]}}
-  - hosts: [h7]
-    module: traffic.benign.ping_flow
-    args: {target: "$h1", count: {range: [30, 60]}, interval: {range: [0.2, 0.8]}}
