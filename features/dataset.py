@@ -6,10 +6,13 @@ FEATURE_NAMES = [
     "rst_count", "mean_iat", "std_iat", "unique_dst_ports", "unique_src_ports", "protocol",
 ]
 
-# spoof (ARP) dropped: it's an L2 attack that the flow-feature IDS separates trivially by the
-# categorical `protocol` feature, so it can't participate in the near-boundary evasion study.
-# The study centres on dos/recon, whose giveaways are continuous, realizably-dial-able footprints.
-CLASS_NAMES = ["benign", "dos", "recon"]
+# The study centres on evasion-amenable C2 beaconing: a class whose *function* (maintain a control
+# channel) is separable from its *traffic shape* (timing/size regularity), so it can be walked
+# across the boundary while staying functional. dos/recon (volumetric/structural) and spoof (L2)
+# were retired — their detectable signature IS their function, so they can't be evaded per-flow.
+# See git history for the dos/recon/spoof substrate. Benign vs c2 is binary by design (cleanest
+# evasion target); an exfil class can be added later for breadth.
+CLASS_NAMES = ["benign", "c2"]
 
 
 def save_dataset(path, X, y, feature_names=FEATURE_NAMES, class_names=CLASS_NAMES):

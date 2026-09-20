@@ -1,0 +1,54 @@
+name: c2
+hosts: 8              # h1 victim/capture + services, h2-h3 C2 beacons, h4-h5 benign periodic, h6-h8 background benign
+duration: 60         # longer than dos/recon: beaconing needs several check-ins to show a cadence
+
+capture: {host: h1, iface: h1-eth0}
+
+servers:
+  # ordinary services double as the C2 endpoint: an HTTP-style beacon that blends into web ports is
+  # the realistic strong case, and it forces the detector onto timing/size (dst port isn't a feature).
+  - {host: h1, module: traffic.benign.services, args: {ports: "80,443,8080,22,3306,5432,8000,9000,25,110"}}
+  - {host: h1, module: traffic.benign.iperf_server}
+
+attack:
+  # C2 beacons (traffic.periodic_client in the RIGID regime). Near-boundary knobs: jitter (timing
+  # regularity) and size_jitter (payload consistency), both low here = the detectable naive beacon.
+  # Step 3's evasion raises them toward the benign regime below while the beacon stays functional.
+  - hosts: [h2, h3]
+    class: c2
+    module: traffic.periodic_client
+    args:
+      target: "$h1"
+      port: {choice: [80, 443, 8080, 8000]}   # one port per host -> unique_dst_ports 1, like benign
+      interval: {range: [2.0, 8.0]}
+      jitter: {range: [0.0, 0.2]}              # rigid; raising this is the core evasion move
+      payload_size: {range: [32, 128]}
+      size_jitter: {range: [0.0, 0.15]}        # consistent check-in size
+      duration: 60
+
+benign:
+  # benign periodic traffic (keepalives / polling): SAME client, LOOSE regime — naturally jittered
+  # intervals and varied payloads. This is the confuser that stops beacon detection being trivial.
+  - hosts: [h4, h5]
+    module: traffic.periodic_client
+    args:
+      target: "$h1"
+      port: {choice: [80, 443, 8080, 8000, 3306, 5432]}
+      interval: {range: [1.0, 10.0]}
+      jitter: {range: [0.3, 0.9]}
+      payload_size: {range: [32, 512]}
+      size_jitter: {range: [0.2, 0.8]}
+      duration: 60
+  # non-periodic background so "benign" isn't ONLY periodic traffic (bursty app + bulk transfer)
+  - hosts: [h6, h7]
+    module: traffic.benign.app_client
+    args:
+      target: "$h1"
+      open_ports: "80,443,8080,22,3306,5432,8000,9000,25,110"
+      closed_ports: "1234,4321,6666,9999,31337,12345,4444,5555"
+      n_ports: {range: [1, 14]}
+      closed_ratio: {range: [0.0, 1.0]}
+      n_connections: {range: [10, 50]}
+  - hosts: [h8]
+    module: traffic.benign.iperf_flow
+    args: {target: "$h1", duration: {range: [15, 25]}}

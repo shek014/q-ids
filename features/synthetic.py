@@ -83,6 +83,26 @@ def generate_recon(n, rng):
                  unique_dst_ports, unique_src_ports, protocol, rng)
 
 
+def generate_c2(n, rng):
+    # periodic beacon: repeated short check-ins aggregated into one flow -> a handful of SYN/FIN per
+    # check-in, single C2 port, small consistent payloads. (The real timing-regularity signal lives
+    # in the pcap; _pack's generic std_iat can't reproduce it, so synthetic c2 is only a pipeline
+    # smoke-test stand-in — the substrate is the Mininet capture, not this.)
+    duration = rng.gamma(6.0, 4.0, size=n)                          # spans several check-in intervals
+    n_checkins = rng.poisson(12, size=n) + 4
+    packet_count = np.clip(n_checkins * np.clip(rng.normal(8, 2, size=n), 3, None), 6, None)
+    byte_count = packet_count * np.clip(rng.normal(120, 20, size=n), 60, 400)
+    syn = n_checkins.astype(float)                                   # ~one SYN per check-in
+    ack = packet_count * np.clip(rng.normal(0.4, 0.05, size=n), 0.2, 0.6)
+    fin = n_checkins * np.clip(rng.normal(1.0, 0.2, size=n), 0.5, 1.5)
+    rst = rng.binomial(1, 0.1, size=n).astype(float)
+    unique_dst_ports = np.ones(n)                                    # single C2 port
+    unique_src_ports = np.clip(rng.normal(n_checkins, 2, size=n), 1, None)  # ephemeral per connect
+    protocol = _protocol(rng, n, [1.0, 0.0, 0.0, 0.0])              # tcp
+    return _pack(duration, packet_count, byte_count, syn, ack, fin, rst,
+                 unique_dst_ports, unique_src_ports, protocol, rng)
+
+
 def generate_spoof(n, rng):
     duration = rng.gamma(3.0, 1.0, size=n)
     packet_count = rng.poisson(20, size=n) + 5  # repeated gratuitous ARP replies
@@ -100,6 +120,7 @@ def generate_spoof(n, rng):
 
 GENERATORS = {
     "benign": generate_benign,
+    "c2": generate_c2,
     "dos": generate_dos,
     "recon": generate_recon,
     "spoof": generate_spoof,
@@ -109,7 +130,7 @@ GENERATORS = {
 def generate(n_samples, class_weights=None, seed=None):
     rng = np.random.default_rng(seed)
     if class_weights is None:
-        class_weights = {"benign": 0.55, "dos": 0.20, "recon": 0.15, "spoof": 0.10}
+        class_weights = {"benign": 0.6, "c2": 0.4}
 
     X_parts, y_parts = [], []
     for label_idx, name in enumerate(CLASS_NAMES):
