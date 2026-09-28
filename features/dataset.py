@@ -3,8 +3,11 @@ import numpy as np
 FEATURE_NAMES = [
     "duration", "packet_count", "byte_count", "mean_packet_size", "std_packet_size",
     "packets_per_second", "bytes_per_second", "syn_count", "ack_count", "fin_count",
-    "rst_count", "mean_iat", "std_iat", "unique_dst_ports", "unique_src_ports", "protocol",
+    "rst_count", "mean_iat", "std_iat", "cv_iat", "unique_dst_ports", "unique_src_ports", "protocol",
 ]
+# cv_iat = std_iat / mean_iat: the scale-invariant timing-regularity signal. A rigid C2 beacon has
+# low cv_iat at any interval; a naturally-jittered benign heartbeat has high cv_iat. It's the axis
+# the evasion dials, and (unlike raw std_iat) it doesn't conflate regularity with interval length.
 
 # The study centres on evasion-amenable C2 beaconing: a class whose *function* (maintain a control
 # channel) is separable from its *traffic shape* (timing/size regularity), so it can be walked
