@@ -1,23 +1,24 @@
-"""Periodic TCP client — the shared mechanism behind BOTH C2 beacons and benign keepalive/polling.
+"""Periodic UDP client — the shared mechanism behind BOTH C2 beacons and benign keepalive/polling.
 
-A beacon and a benign heartbeat are the *same* thing on the wire: a host that opens a short
-connection to a service every so often, sends a little, reads a little, and hangs up. What tells
-them apart is not the mechanism but the *statistics* of the cadence and payload:
+A beacon and a benign heartbeat are the *same* thing on the wire: a host that sends a small packet
+to one destination every so often. Each check-in is a single UDP datagram (DNS/heartbeat-style C2,
+the clean realistic case), so a flow's packet inter-arrival times ARE the check-in intervals — the
+timing signal lives directly in mean_iat / std_iat / cv_iat instead of being buried under TCP
+handshake micro-timing. What separates the two roles is not the mechanism but the *statistics*:
 
-  - a naive C2 beacon is rigid        -> low timing jitter, consistent check-in size
-  - benign keepalive/polling is loose -> naturally jittered intervals, varied payloads
+  - a naive C2 beacon is rigid        -> low jitter  -> low cv_iat, consistent payload size
+  - benign keepalive/polling is loose -> high jitter -> high cv_iat, varied payload size
 
 So this one module generates both roles; the scenario picks the regime via `jitter` / `size_jitter`
 (0 = rigid, 1 = ±100%) and the collector labels the flow by the host's role (attack entry -> c2,
-benign entry -> benign). That makes the two classes near-boundary *by construction*: the only thing
-separating them is the timing/size distribution — which is exactly the axis Step 3's evasion dials.
-A functional beacon just has to keep checking in, so raising jitter to mimic benign traffic is
-realizable and (like the SYN flood's source-port pool) essentially free of functional cost.
+benign entry -> benign). With intervals drawn from the SAME range for both, timing regularity and
+size consistency are the ONLY things distinguishing them — which is exactly the axis Step 3's
+evasion dials. A functional beacon just has to keep checking in, so raising jitter to mimic benign
+traffic is realizable and (like the SYN flood's source-port pool) essentially free of functional cost.
 
-Uses ordinary kernel sockets, so it needs a listener on the far side (traffic.benign.services) and
-no root. The check-in is functional iff the connection completes and a reply is read back; the
-per-run check-in count printed here is the raw material for Step 3's functional oracle
-(max tolerable gap between successful check-ins).
+Uses an ordinary UDP socket (no root); needs a listener echoing replies (traffic.udp_echo). A
+check-in is functional iff the echo reply comes back; the per-run check-in count printed here is the
+raw material for Step 3's functional oracle (max tolerable gap between successful check-ins).
 """
 import argparse
 import random
@@ -33,23 +34,21 @@ def _payload(size):
 def run(target, port, interval=5.0, jitter=0.1, payload_size=64, size_jitter=0.0,
         duration=30, timeout=1.0, seed=None, verbose=True):
     rng = random.Random(seed)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(timeout)
     end = time.time() + duration
     checkins = attempts = 0
     while time.time() < end:
         attempts += 1
         size = int(round(payload_size * (1 + rng.uniform(-size_jitter, size_jitter))))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(timeout)
         try:
-            s.connect((target, port))
-            s.sendall(_payload(size))
-            s.recv(1024)
-            checkins += 1                    # completed check-in: reached C2 / service, got a reply
+            sock.sendto(_payload(size), (target, port))
+            sock.recvfrom(1024)              # echo reply confirms the check-in reached the C2/service
+            checkins += 1
         except OSError:
-            pass                             # missed check-in (server busy/unreachable)
-        finally:
-            s.close()
+            pass                             # missed check-in (no reply within timeout)
         time.sleep(max(0.0, interval * (1 + rng.uniform(-jitter, jitter))))
+    sock.close()
     if verbose:
         print(f"periodic_client: {checkins}/{attempts} check-ins to {target}:{port} "
               f"(interval={interval}s jitter={jitter} size={payload_size}b size_jitter={size_jitter})")

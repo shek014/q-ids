@@ -30,11 +30,12 @@ def _pack(duration, packet_count, byte_count, syn, ack, fin, rst,
     bps = byte_count / duration
     mean_iat = duration / packet_count
     std_iat = np.abs(rng.normal(mean_iat * 0.4, mean_iat * 0.1 + 1e-4))
+    cv_iat = std_iat / np.clip(mean_iat, 1e-9, None)
 
     return np.column_stack([
         duration, packet_count, byte_count, mean_pkt, std_pkt,
         pps, bps, syn, ack, fin, rst,
-        mean_iat, std_iat, unique_dst_ports, unique_src_ports, protocol,
+        mean_iat, std_iat, cv_iat, unique_dst_ports, unique_src_ports, protocol,
     ])
 
 

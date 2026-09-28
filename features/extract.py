@@ -75,6 +75,8 @@ def _flow_features(key, packets):
     packet_count = len(packets)
     byte_count = lengths.sum()
     iat = np.diff(ts) if len(ts) > 1 else np.array([0.0])
+    mean_iat, std_iat = iat.mean(), iat.std()
+    cv_iat = std_iat / mean_iat if mean_iat > 1e-9 else 0.0  # scale-invariant timing regularity
     syn = sum(1 for p in packets if "S" in p["flags"])
     ack = sum(1 for p in packets if "A" in p["flags"])
     fin = sum(1 for p in packets if "F" in p["flags"])
@@ -88,7 +90,7 @@ def _flow_features(key, packets):
         "mean_packet_size": lengths.mean(), "std_packet_size": lengths.std(),
         "packets_per_second": packet_count / duration, "bytes_per_second": byte_count / duration,
         "syn_count": syn, "ack_count": ack, "fin_count": fin, "rst_count": rst,
-        "mean_iat": iat.mean(), "std_iat": iat.std(),
+        "mean_iat": mean_iat, "std_iat": std_iat, "cv_iat": cv_iat,
         "unique_dst_ports": len(dports), "unique_src_ports": len(sports),
         "protocol": PROTO_CODE[proto],
         "_src_mac": packets[0]["src_mac"],
