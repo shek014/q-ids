@@ -32,10 +32,11 @@ def _payload(size):
 
 
 def run(target, port, interval=5.0, jitter=0.1, payload_size=64, size_jitter=0.0,
-        duration=30, timeout=1.0, seed=None, verbose=True):
+        duration=30, timeout=1.0, seed=None, log=None, verbose=True):
     rng = random.Random(seed)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
+    logf = open(log, "a") if log else None   # timestamp of each successful (round-trip) check-in
     end = time.time() + duration
     checkins = attempts = 0
     while time.time() < end:
@@ -45,10 +46,15 @@ def run(target, port, interval=5.0, jitter=0.1, payload_size=64, size_jitter=0.0
             sock.sendto(_payload(size), (target, port))
             sock.recvfrom(1024)              # echo reply confirms the check-in reached the C2/service
             checkins += 1
+            if logf:
+                logf.write(f"{time.time():.6f}\n")
+                logf.flush()
         except OSError:
             pass                             # missed check-in (no reply within timeout)
         time.sleep(max(0.0, interval * (1 + rng.uniform(-jitter, jitter))))
     sock.close()
+    if logf:
+        logf.close()
     if verbose:
         print(f"periodic_client: {checkins}/{attempts} check-ins to {target}:{port} "
               f"(interval={interval}s jitter={jitter} size={payload_size}b size_jitter={size_jitter})")
@@ -67,9 +73,10 @@ def main():
     parser.add_argument("--duration", type=float, default=30)
     parser.add_argument("--timeout", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--log", default=None, help="append each successful check-in's timestamp here")
     args = parser.parse_args()
     run(args.target, args.port, args.interval, args.jitter, args.payload_size,
-        args.size_jitter, args.duration, args.timeout, args.seed)
+        args.size_jitter, args.duration, args.timeout, args.seed, args.log)
 
 
 if __name__ == "__main__":
