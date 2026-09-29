@@ -10,26 +10,10 @@
           "recall": 1.0,
           "f1": 1.0,
           "false_positive_rate": 0.0,
-          "roc_auc": 0.9999999999999999,
-          "pr_auc": 1.0
-        },
-        "dos": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
           "roc_auc": 1.0,
           "pr_auc": 1.0
         },
-        "recon": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
-        },
-        "spoof": {
+        "c2": {
           "precision": 1.0,
           "recall": 1.0,
           "f1": 1.0,
@@ -40,97 +24,49 @@
       },
       "confusion_matrix": [
         [
-          104,
-          0,
-          0,
-          0
-        ],
-        [
-          0,
-          45,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
           45,
           0
         ],
         [
           0,
-          0,
-          0,
-          45
+          18
         ]
       ]
     },
-    "param_count": 884,
+    "param_count": 850,
     "n_features": 8,
     "input_mode": "matched",
-    "train_time_seconds": 0.30928776300061145
+    "train_time_seconds": 0.09050775299965608
   },
   "vqc": {
     "summary": {
-      "accuracy": 0.8158995815899581,
-      "macro_f1": 0.763756415930329,
-      "macro_false_positive_rate": 0.06627529591447118,
+      "accuracy": 0.9682539682539683,
+      "macro_f1": 0.9623205741626795,
+      "macro_false_positive_rate": 0.022222222222222223,
       "per_class": {
         "benign": {
-          "precision": 0.8559322033898306,
-          "recall": 0.9711538461538461,
-          "f1": 0.9099099099099099,
-          "false_positive_rate": 0.1259259259259259,
-          "roc_auc": 0.9855413105413104,
-          "pr_auc": 0.9832132302470917
-        },
-        "dos": {
-          "precision": 0.6923076923076923,
-          "recall": 1.0,
-          "f1": 0.8181818181818181,
-          "false_positive_rate": 0.10309278350515463,
+          "precision": 1.0,
+          "recall": 0.9555555555555556,
+          "f1": 0.9772727272727273,
+          "false_positive_rate": 0.0,
           "roc_auc": 1.0,
           "pr_auc": 1.0
         },
-        "recon": {
-          "precision": 0.96875,
-          "recall": 0.6888888888888889,
-          "f1": 0.8051948051948051,
-          "false_positive_rate": 0.005154639175257732,
-          "roc_auc": 0.943413516609393,
-          "pr_auc": 0.8904567730441963
-        },
-        "spoof": {
-          "precision": 0.75,
-          "recall": 0.4,
-          "f1": 0.5217391304347827,
-          "false_positive_rate": 0.030927835051546393,
-          "roc_auc": 0.9764032073310424,
-          "pr_auc": 0.8968219689972445
+        "c2": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1": 0.9473684210526316,
+          "false_positive_rate": 0.044444444444444446,
+          "roc_auc": 1.0,
+          "pr_auc": 1.0
         }
       },
       "confusion_matrix": [
         [
-          101,
-          0,
-          1,
+          43,
           2
         ],
         [
-          0,
-          45,
-          0,
-          0
-        ],
-        [
-          3,
-          7,
-          31,
-          4
-        ],
-        [
-          14,
-          13,
           0,
           18
         ]
@@ -139,7 +75,7 @@
     "param_count": 96,
     "n_features": 8,
     "input_mode": "matched",
-    "train_time_seconds": 44.125871899999765
+    "train_time_seconds": 22.64636008799971
   },
   "mlp_native": {
     "summary": {
@@ -152,26 +88,10 @@
           "recall": 1.0,
           "f1": 1.0,
           "false_positive_rate": 0.0,
-          "roc_auc": 0.9999999999999999,
-          "pr_auc": 1.0
-        },
-        "dos": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
           "roc_auc": 1.0,
           "pr_auc": 1.0
         },
-        "recon": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
-        },
-        "spoof": {
+        "c2": {
           "precision": 1.0,
           "recall": 1.0,
           "f1": 1.0,
@@ -182,34 +102,18 @@
       },
       "confusion_matrix": [
         [
-          104,
-          0,
-          0,
-          0
-        ],
-        [
-          0,
-          45,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
           45,
           0
         ],
         [
           0,
-          0,
-          0,
-          45
+          18
         ]
       ]
     },
-    "param_count": 1140,
-    "n_features": 16,
+    "param_count": 1138,
+    "n_features": 17,
     "input_mode": "native",
-    "train_time_seconds": 0.3676821259996359
+    "train_time_seconds": 0.10474918500040076
   }
 }

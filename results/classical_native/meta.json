@@ -1,10 +1,10 @@
 {
   "model": "classical_mlp",
   "input_mode": "native",
-  "param_count": 1123,
-  "train_time_seconds": 0.3008469789983792,
+  "param_count": 1138,
+  "train_time_seconds": 0.10474918500040076,
   "test_accuracy": 1.0,
-  "n_features": 16,
+  "n_features": 17,
   "pca_components": null,
   "pca_explained_variance_ratio": null,
   "feature_names": [
@@ -21,14 +21,14 @@
     "rst_count",
     "mean_iat",
     "std_iat",
+    "cv_iat",
     "unique_dst_ports",
     "unique_src_ports",
     "protocol"
   ],
   "class_names": [
     "benign",
-    "dos",
-    "recon"
+    "c2"
   ],
   "config": {
     "hidden_sizes": [
