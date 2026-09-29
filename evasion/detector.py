@@ -18,9 +18,10 @@ from models.classical.mlp import MLP
 
 
 class Detector:
-    def __init__(self, model, info, benign_idx, meta, name):
+    def __init__(self, model, info, angle, benign_idx, meta, name):
         self.model = model
         self.info = info
+        self.angle = angle              # {ref_min, span, bound} for the VQC's AngleEmbedding, else None
         self.benign_idx = benign_idx
         self.meta = meta
         self.name = name
@@ -35,24 +36,36 @@ class Detector:
         (X_train, _), (X_val, _), (X_test, _) = train_val_test_split(
             X, y, val_size=cfg["val_size"], test_size=cfg["test_size"], seed=cfg["seed"])
 
-        to_angles = meta["model"] == "vqc"
+        to_angles = meta["model"] == "quantum_vqc"
         _, info = preprocess((X_train, X_val, X_test),
                              n_components=meta.get("pca_components"), to_angles=to_angles)
 
+        # Reconstruct the angle-scaling reference (train post-PCA min/max), which preprocess computes
+        # internally but doesn't stash in info. angle_bound defaults to pi (as the VQC trainer used).
+        angle = None
+        if to_angles:
+            Ztr = info["scaler"].transform(X_train)
+            if info["pca"] is not None:
+                Ztr = info["pca"].transform(Ztr)
+            ref_min, ref_max = Ztr.min(axis=0), Ztr.max(axis=0)
+            angle = {"ref_min": ref_min, "span": np.clip(ref_max - ref_min, 1e-8, None), "bound": np.pi}
+
         if meta["model"] == "classical_mlp":
             model = MLP.load(str(result_dir / "model.npz"))
+        elif meta["model"] == "quantum_vqc":
+            from models.quantum.vqc import VQC   # lazy: only pull in pennylane for a VQC detector
+            model = VQC.load(str(result_dir / "model.npz"))
         else:
-            raise NotImplementedError(
-                f"detector for model '{meta['model']}' not built yet (VQC lands with transferability)")
+            raise NotImplementedError(f"detector for model '{meta['model']}' not supported")
 
-        return cls(model, info, class_names.index("benign"), meta, result_dir.name)
+        return cls(model, info, angle, class_names.index("benign"), meta, result_dir.name)
 
     def transform(self, raw):
         Z = self.info["scaler"].transform(np.atleast_2d(raw))
         if self.info["pca"] is not None:
             Z = self.info["pca"].transform(Z)
-        if self.info.get("angle_scaled"):
-            raise NotImplementedError("angle-scaling reconstruction is deferred (VQC transferability)")
+        if self.angle is not None:
+            Z = (Z - self.angle["ref_min"]) / self.angle["span"] * (2 * self.angle["bound"]) - self.angle["bound"]
         return Z
 
     def prob_benign(self, raw):
