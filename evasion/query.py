@@ -1,30 +1,29 @@
-"""The evasion query primitive: run ONE real beacon with a given parameter set, in a short Mininet
-capture, and return (its extracted flow features, its functional verdict). This is the expensive
-oracle the line search wraps — each call is a live capture, so it needs root (see README).
+"""The evasion query primitive: run ONE real beacon with a given parameter set and return
+(its extracted flow features, its functional verdict). This is the expensive oracle the line
+search wraps — each call is a live capture.
 
-A query is deliberately minimal: two hosts (h1 = C2/echo + capture, h2 = beacon). Flow features are
-per source MAC, so the beacon's flow is identical whether or not other hosts are chattering — no need
-to reproduce the full training topology here, only the beacon itself. The capture window matches the
-training window (60s) so the query flow is in-distribution with the trained detector (the features
-duration/packet_count scale with the window; the window-invariant redesign is the planned follow-up).
+Runs in the .venv (numpy/scapy/models), the same environment that trained the detectors, so no
+version skew touches the PCA-based detectors. The Mininet capture itself lives in system python3
+(no numpy there), so it is delegated to evasion/capture_helper.py as a subprocess. Drive the whole
+thing as root:  sudo .venv/bin/python -m evasion.run ...  (root is inherited by the helper, which
+needs it for Mininet). A query is deliberately minimal: two hosts (h1 = C2/echo + capture, h2 =
+beacon). Flow features are per source MAC, so the beacon's flow is the same with or without other
+hosts chattering. The 60s window matches training so the query flow is in-distribution.
 """
 import argparse
+import json
+import subprocess
+import sys
 import tempfile
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from mininet.net import Mininet
-from mininet.node import OVSController
-from mininet.link import TCLink
-
-from capture.capture import Capture
-from topology.topo import IDSTopo
 from features.extract import extract_pcap
 from features.dataset import FEATURE_NAMES
 from evasion import oracle
 
-C2_PORT = 9999
+# system python3 has Mininet (the .venv does not); use it explicitly for the capture half
+SYSTEM_PYTHON = "/usr/bin/python3"
 
 
 @dataclass
@@ -43,52 +42,26 @@ class QueryResult:
 def run_query(theta, window=60.0, max_interval=30.0, seed=0, work_dir=None):
     """theta: {interval, jitter, size_jitter, payload_size?}. Returns a QueryResult."""
     work = Path(work_dir) if work_dir else Path(tempfile.mkdtemp(prefix="evq_"))
-    work.mkdir(parents=True, exist_ok=True)
-    pcap_path = work / "query.pcap"
-    log_path = work / "checkins.log"
-    if log_path.exists():
-        log_path.unlink()
+    cmd = [
+        SYSTEM_PYTHON, "-m", "evasion.capture_helper",
+        "--interval", str(theta["interval"]),
+        "--jitter", str(theta["jitter"]),
+        "--size-jitter", str(theta.get("size_jitter", 0.0)),
+        "--payload-size", str(int(theta.get("payload_size", 64))),
+        "--window", str(window),
+        "--seed", str(seed),
+        "--out-dir", str(work),
+    ]
+    subprocess.run(cmd, check=True)  # inherits root from the driver; builds+captures the topology
 
-    net = Mininet(topo=IDSTopo(n_hosts=2), controller=OVSController, link=TCLink)
-    net.start()
-    try:
-        h1, h2 = net.get("h1"), net.get("h2")
-        for h in (h1, h2):
-            for intf in h.intfList():
-                if intf.name != "lo":
-                    h.cmd(f"ethtool -K {intf.name} gso off tso off gro off lro off")
-        net.staticArp()
-
-        echo = h1.popen(["python3", "-m", "traffic.udp_echo", "--ports", str(C2_PORT)])
-        time.sleep(1.0)  # let the echo server bind
-
-        beacon_cmd = [
-            "python3", "-m", "traffic.periodic_client",
-            "--target", h1.IP(), "--port", str(C2_PORT),
-            "--interval", str(theta["interval"]),
-            "--jitter", str(theta["jitter"]),
-            "--payload-size", str(int(theta.get("payload_size", 64))),
-            "--size-jitter", str(theta.get("size_jitter", 0.0)),
-            "--duration", str(window),
-            "--seed", str(seed),
-            "--log", str(log_path),
-        ]
-        with Capture(iface="h1-eth0", out_path=str(pcap_path), node=h1):
-            t0 = time.time()
-            beacon = h2.popen(beacon_cmd)
-            time.sleep(window + 1.0)
-            if beacon.poll() is None:
-                beacon.terminate()
-        if echo.poll() is None:
-            echo.terminate()
-
-        X, _ = extract_pcap(pcap_path, mac_labels={h2.MAC(): "c2"}, exclude_macs=[h1.MAC()])
-        features = X[0] if len(X) else None
-        func = oracle.evaluate(oracle.read_checkins(log_path), max_interval,
-                               window_start=t0, window_end=t0 + window)
-        return QueryResult(theta=dict(theta), features=features, functionality=func, n_flows=len(X))
-    finally:
-        net.stop()
+    meta = json.loads((work / "meta.json").read_text())
+    X, _ = extract_pcap(work / "query.pcap", mac_labels={meta["beacon_mac"]: "c2"},
+                        exclude_macs=[meta["capture_mac"]])
+    features = X[0] if len(X) else None
+    func = oracle.evaluate(oracle.read_checkins(work / "checkins.log"), max_interval,
+                           window_start=meta["window_start"],
+                           window_end=meta["window_start"] + meta["window"])
+    return QueryResult(theta=dict(theta), features=features, functionality=func, n_flows=len(X))
 
 
 def main():
@@ -100,11 +73,11 @@ def main():
     p.add_argument("--window", type=float, default=60.0)
     p.add_argument("--max-interval", type=float, default=30.0)
     p.add_argument("--seed", type=int, default=0)
-    args = p.parse_args()
+    a = p.parse_args()
 
-    theta = {"interval": args.interval, "jitter": args.jitter,
-             "size_jitter": args.size_jitter, "payload_size": args.payload_size}
-    r = run_query(theta, window=args.window, max_interval=args.max_interval, seed=args.seed)
+    theta = {"interval": a.interval, "jitter": a.jitter,
+             "size_jitter": a.size_jitter, "payload_size": a.payload_size}
+    r = run_query(theta, window=a.window, max_interval=a.max_interval, seed=a.seed)
 
     f = r.functionality
     print(f"\ntheta={theta}")
@@ -116,7 +89,7 @@ def main():
         for name, val in zip(FEATURE_NAMES, r.features):
             print(f"  {name:<20}{val:.4f}")
     else:
-        print("no beacon flow extracted (beacon produced no captured traffic)")
+        print("no beacon flow extracted", file=sys.stderr)
 
 
 if __name__ == "__main__":
