@@ -1,20 +1,20 @@
 {
   "model": "classical_mlp",
   "input_mode": "matched",
-  "param_count": 867,
-  "train_time_seconds": 0.21607661400048528,
+  "param_count": 850,
+  "train_time_seconds": 0.09050775299965608,
   "test_accuracy": 1.0,
   "n_features": 8,
   "pca_components": 8,
   "pca_explained_variance_ratio": [
-    0.5268960854688648,
-    0.16395793459989125,
-    0.137864144720504,
-    0.09690852752107626,
-    0.03958842718904318,
-    0.013536675124400542,
-    0.010159189389447215,
-    0.005261761982371816
+    0.44290370511685095,
+    0.3740424794418735,
+    0.05775246882150434,
+    0.05331600480798567,
+    0.023500514186231516,
+    0.018355644652098848,
+    0.011916668748213692,
+    0.008101045726173919
   ],
   "feature_names": [
     "duration",
@@ -30,14 +30,14 @@
     "rst_count",
     "mean_iat",
     "std_iat",
+    "cv_iat",
     "unique_dst_ports",
     "unique_src_ports",
     "protocol"
   ],
   "class_names": [
     "benign",
-    "dos",
-    "recon"
+    "c2"
   ],
   "config": {
     "hidden_sizes": [

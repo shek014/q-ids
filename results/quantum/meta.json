@@ -2,20 +2,20 @@
   "model": "quantum_vqc",
   "input_mode": "matched",
   "param_count": 96,
-  "train_time_seconds": 44.125871899999765,
-  "test_accuracy": 0.8158995815899581,
+  "train_time_seconds": 22.64636008799971,
+  "test_accuracy": 0.9682539682539683,
   "n_features": 8,
   "n_qubits": 8,
   "pca_components": 8,
   "pca_explained_variance_ratio": [
-    0.5460525607280796,
-    0.18681003937411897,
-    0.1476871330700351,
-    0.0692675657323123,
-    0.01569392563235405,
-    0.014505251599239068,
-    0.013725287071153582,
-    0.0038774261787585993
+    0.44290370511685095,
+    0.3740424794418735,
+    0.05775246882150434,
+    0.05331600480798567,
+    0.023500514186231516,
+    0.018355644652098848,
+    0.011916668748213692,
+    0.008101045726173919
   ],
   "feature_names": [
     "duration",
@@ -31,15 +31,14 @@
     "rst_count",
     "mean_iat",
     "std_iat",
+    "cv_iat",
     "unique_dst_ports",
     "unique_src_ports",
     "protocol"
   ],
   "class_names": [
     "benign",
-    "dos",
-    "recon",
-    "spoof"
+    "c2"
   ],
   "config": {
     "n_qubits": 8,
