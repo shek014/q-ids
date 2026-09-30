@@ -89,9 +89,7 @@ def main():
         "jitters": sweep["jitters"].tolist(),
         "n_seeds": int(sweep["features"].shape[0]),
     }
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps(out, indent=2))
-
+    # print first, so a write failure (e.g. a root-owned results/ dir) never loses the numbers
     print(f"classical MLP: evasion {out['classical']['evasion_rate']:.2f}  "
           f"median jitter {out['classical']['median_min_jitter']}")
     print(f"VQC:           evasion {out['quantum']['evasion_rate']:.2f}  "
@@ -102,6 +100,9 @@ def main():
           f"equal: {paired['equal']}]")
     print(f"transfer MLP-evasion -> VQC: {out['transfer_mlp_evasion_to_vqc']['transfer_rate']}")
     print(f"transfer VQC-evasion -> MLP: {out['transfer_vqc_evasion_to_mlp']['transfer_rate']}")
+
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.out).write_text(json.dumps(out, indent=2))
     print(f"\nsaved -> {args.out}")
 
 
