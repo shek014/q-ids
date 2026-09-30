@@ -48,8 +48,15 @@ def main():
     p.add_argument("--data", default="data/dataset.npz")
     p.add_argument("--seeds", type=int, default=15, help="number of beacon instances")
     p.add_argument("--interval", type=float, default=4.0, help="fixed check-in interval")
+    p.add_argument("--axis", default="jitter", choices=["jitter", "size_jitter"],
+                   help="which realizable knob to line-search (size_jitter = step-4 escalation)")
+    p.add_argument("--values", default=None, help="ascending grid for --axis (defaults to --jitters)")
     p.add_argument("--jitters", default="0.0,0.1,0.2,0.3,0.5,0.8,1.2,2.0",
-                   help="ascending jitter grid to search")
+                   help="grid used when --values is omitted (kept for the jitter-axis runs)")
+    p.add_argument("--fixed-jitter", type=float, default=0.1,
+                   help="held jitter when searching size_jitter (set to an evading value, e.g. 0.5)")
+    p.add_argument("--fixed-size-jitter", type=float, default=0.0,
+                   help="held size_jitter when searching jitter")
     p.add_argument("--window", type=float, default=60.0)
     p.add_argument("--max-interval", type=float, default=30.0)
     p.add_argument("--threshold", type=float, default=0.5, help="P(benign) to count as evaded")
@@ -59,15 +66,16 @@ def main():
     args = p.parse_args()
 
     detector = Detector.from_result(args.detector, args.data)
-    jitters = [float(x) for x in args.jitters.split(",")]
-    base_theta = {"interval": args.interval, "size_jitter": 0.0, "payload_size": 64}
+    values = [float(x) for x in (args.values or args.jitters).split(",")]
+    base_theta = {"interval": args.interval, "jitter": args.fixed_jitter,
+                  "size_jitter": args.fixed_size_jitter, "payload_size": 64}
 
     def query_fn(theta, seed):
         try:
             return run_query(theta, window=args.window, max_interval=args.max_interval,
                              seed=seed, work_dir=args.work_dir)
         except Exception as e:  # noqa: BLE001 - one flaky capture must not kill the batch
-            print(f"  query failed (seed={seed}, jitter={theta['jitter']}): {e}")
+            print(f"  query failed (seed={seed}, {args.axis}={theta[args.axis]}): {e}")
             return _FAILED
 
     print(f"detector '{detector.name}' ({detector.meta['model']}, {detector.meta['input_mode']})  "
@@ -77,7 +85,7 @@ def main():
     # minute instead of letting the whole run report a bogus 0.00 evasion rate an hour later.
     print("preflight capture...")
     try:
-        pf = run_query({**base_theta, "jitter": jitters[0]}, window=args.window,
+        pf = run_query({**base_theta, args.axis: values[0]}, window=args.window,
                        max_interval=args.max_interval, seed=0, work_dir=args.work_dir)
     except Exception as e:  # noqa: BLE001
         raise SystemExit(f"preflight capture FAILED: {e}\n"
@@ -86,16 +94,17 @@ def main():
         raise SystemExit("preflight produced no beacon flow — check OVS / capture setup before the run")
     print(f"preflight ok: functional={pf.functionality.functional}, "
           f"P(benign)={detector.prob_benign(pf.features)[0]:.3f}\n")
-    print(f"line search: interval={args.interval}s, jitters={jitters}, {args.seeds} beacons\n")
+    print(f"line search on {args.axis}: interval={args.interval}s, "
+          f"fixed_jitter={args.fixed_jitter}, values={values}, {args.seeds} beacons\n")
 
     results = []
     for seed in range(args.seeds):
-        r = line_search(detector.prob_benign, query_fn, base_theta, jitters,
-                        seed=seed, threshold=args.threshold, early_stop=not args.full_grid)
+        r = line_search(detector.prob_benign, query_fn, base_theta, values, seed=seed,
+                        threshold=args.threshold, early_stop=not args.full_grid, axis=args.axis)
         if _errored(r):
             status = "ERRORED (no capture)"
         elif r.evaded:
-            status = f"EVADED  min_jitter={r.min_jitter}"
+            status = f"EVADED  min_{args.axis}={r.min_jitter}"
         else:
             status = "held   (detector held)"
         print(f"  seed {seed:2d}: {status}  ({r.queries} queries)")
