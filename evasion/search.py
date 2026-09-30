@@ -20,17 +20,18 @@ class SearchResult:
     trajectory: list = field(default_factory=list)  # [(jitter, prob_benign|None, functional)]
 
 
-def line_search(prob_benign, query_fn, base_theta, jitters, seed=0,
-                threshold=0.5, early_stop=True):
-    """jitters: ascending list of jitter values to try. A query "evades" when the detector's
-    P(benign) >= threshold AND the beacon is still functional. With early_stop, returns at the first
-    evading jitter (the minimal one, since jitters ascend); otherwise runs the whole grid for a full
-    P(benign)-vs-jitter curve."""
+def line_search(prob_benign, query_fn, base_theta, values, seed=0,
+                threshold=0.5, early_stop=True, axis="jitter"):
+    """values: ascending list to try along `axis` (jitter, or size_jitter for the step-4 escalation).
+    A query "evades" when the detector's P(benign) >= threshold AND the beacon is still functional.
+    With early_stop, returns at the first evading value (the minimal one, since values ascend);
+    otherwise runs the whole grid for a full P(benign)-vs-value curve. min_jitter holds the minimal
+    evading value of whichever axis was searched."""
     trajectory = []
     evaded, min_jitter = False, float("inf")
 
-    for j in jitters:
-        theta = {**base_theta, "jitter": j}
+    for j in values:
+        theta = {**base_theta, axis: j}
         result = query_fn(theta, seed)
         if result.features is None:
             trajectory.append((j, None, result.functionality.functional))
