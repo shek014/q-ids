@@ -2,11 +2,11 @@
 trained under, and scores a raw 17-feature flow -> P(benign). The evasion search asks one question
 of it per query: does the detector call this beacon benign?
 
-Preprocessing is reconstructed by re-deriving the train split (same seed/sizes from the model's
-saved config) and re-fitting the scaler/PCA on it — deterministic and, run in the .venv, bit-for-bit
-what training used. The native MLP needs only the scaler (plain z-score), so it is fully robust; the
-PCA/angle path (matched MLP, VQC) is wired but the VQC's angle reconstruction is deferred to the
-transferability chunk.
+Preprocessing is taken from a saved prep.npz in the result dir when present (adversarially-trained
+models are fit on augmented data, so their transform can't be re-derived from the original split);
+otherwise it is reconstructed by re-deriving the train split and re-fitting — deterministic and, in
+the .venv, bit-for-bit what training used. Both paths reduce to the same arrays (scaler, optional
+PCA, optional AngleEmbedding scaling) applied in transform().
 """
 import json
 from pathlib import Path
@@ -18,10 +18,9 @@ from models.classical.mlp import MLP
 
 
 class Detector:
-    def __init__(self, model, info, angle, benign_idx, meta, name):
+    def __init__(self, model, prep, benign_idx, meta, name):
         self.model = model
-        self.info = info
-        self.angle = angle              # {ref_min, span, bound} for the VQC's AngleEmbedding, else None
+        self.prep = prep            # {scaler_mean, scaler_std, pca_mean|None, pca_comp|None, angle|None}
         self.benign_idx = benign_idx
         self.meta = meta
         self.name = name
@@ -30,25 +29,6 @@ class Detector:
     def from_result(cls, result_dir, data_path="data/dataset.npz"):
         result_dir = Path(result_dir)
         meta = json.loads((result_dir / "meta.json").read_text())
-        cfg = meta["config"]
-
-        X, y, _, class_names = load_dataset(data_path)
-        (X_train, _), (X_val, _), (X_test, _) = train_val_test_split(
-            X, y, val_size=cfg["val_size"], test_size=cfg["test_size"], seed=cfg["seed"])
-
-        to_angles = meta["model"] == "quantum_vqc"
-        _, info = preprocess((X_train, X_val, X_test),
-                             n_components=meta.get("pca_components"), to_angles=to_angles)
-
-        # Reconstruct the angle-scaling reference (train post-PCA min/max), which preprocess computes
-        # internally but doesn't stash in info. angle_bound defaults to pi (as the VQC trainer used).
-        angle = None
-        if to_angles:
-            Ztr = info["scaler"].transform(X_train)
-            if info["pca"] is not None:
-                Ztr = info["pca"].transform(Ztr)
-            ref_min, ref_max = Ztr.min(axis=0), Ztr.max(axis=0)
-            angle = {"ref_min": ref_min, "span": np.clip(ref_max - ref_min, 1e-8, None), "bound": np.pi}
 
         if meta["model"] == "classical_mlp":
             model = MLP.load(str(result_dir / "model.npz"))
@@ -58,14 +38,50 @@ class Detector:
         else:
             raise NotImplementedError(f"detector for model '{meta['model']}' not supported")
 
-        return cls(model, info, angle, class_names.index("benign"), meta, result_dir.name)
+        prep_path = result_dir / "prep.npz"
+        prep = cls._prep_from_arrays(np.load(prep_path)) if prep_path.exists() \
+            else cls._refit_prep(meta, data_path)
+        return cls(model, prep, meta["class_names"].index("benign"), meta, result_dir.name)
+
+    @staticmethod
+    def _refit_prep(meta, data_path):
+        cfg = meta["config"]
+        X, y, _, _ = load_dataset(data_path)
+        (X_train, _), (X_val, _), (X_test, _) = train_val_test_split(
+            X, y, val_size=cfg["val_size"], test_size=cfg["test_size"], seed=cfg["seed"])
+        to_angles = meta["model"] == "quantum_vqc"
+        _, info = preprocess((X_train, X_val, X_test),
+                             n_components=meta.get("pca_components"), to_angles=to_angles)
+        prep = {"scaler_mean": info["scaler"].mean_, "scaler_std": info["scaler"].std_,
+                "pca_mean": None, "pca_comp": None, "angle": None}
+        if info["pca"] is not None:
+            prep["pca_mean"], prep["pca_comp"] = info["pca"].mean_, info["pca"].components_
+        if to_angles:
+            Z = info["scaler"].transform(X_train)
+            if info["pca"] is not None:
+                Z = info["pca"].transform(Z)
+            prep["angle"] = {"ref_min": Z.min(axis=0),
+                             "span": np.clip(Z.max(axis=0) - Z.min(axis=0), 1e-8, None), "bound": np.pi}
+        return prep
+
+    @staticmethod
+    def _prep_from_arrays(d):
+        prep = {"scaler_mean": d["scaler_mean"], "scaler_std": d["scaler_std"],
+                "pca_mean": None, "pca_comp": None, "angle": None}
+        if "pca_comp" in d and d["pca_comp"].size:
+            prep["pca_mean"], prep["pca_comp"] = d["pca_mean"], d["pca_comp"]
+        if "angle_ref_min" in d and d["angle_ref_min"].size:
+            prep["angle"] = {"ref_min": d["angle_ref_min"], "span": d["angle_span"],
+                             "bound": float(d["angle_bound"])}
+        return prep
 
     def transform(self, raw):
-        Z = self.info["scaler"].transform(np.atleast_2d(raw))
-        if self.info["pca"] is not None:
-            Z = self.info["pca"].transform(Z)
-        if self.angle is not None:
-            Z = (Z - self.angle["ref_min"]) / self.angle["span"] * (2 * self.angle["bound"]) - self.angle["bound"]
+        Z = (np.atleast_2d(raw) - self.prep["scaler_mean"]) / self.prep["scaler_std"]
+        if self.prep["pca_comp"] is not None:
+            Z = (Z - self.prep["pca_mean"]) @ self.prep["pca_comp"].T
+        a = self.prep["angle"]
+        if a is not None:
+            Z = (Z - a["ref_min"]) / a["span"] * (2 * a["bound"]) - a["bound"]
         return Z
 
     def prob_benign(self, raw):
