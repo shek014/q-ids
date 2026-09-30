@@ -184,6 +184,8 @@ cython_debug/
 # Datasets and captures are generated, not committed — see README > Planned repository layout.
 data/*
 !data/.gitkeep
-capture/*.pcap
-capture/*.pcapng
-capture/*.json
+capture/*
+!capture/.gitkeep
+
+# scratch analysis scripts (throwaway, not part of the pipeline)
+tmp_*.py
