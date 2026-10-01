@@ -1,19 +1,19 @@
 name: c2
-hosts: 8              # h1 victim/capture + services, h2-h3 C2 beacons, h4-h5 benign heartbeats, h6-h8 background benign
+hosts: 8              # h1 victim/capture+services, h2-h3 C2 beacons, h4-h5 regular benign (confusers), h6 loose benign, h7 app, h8 bulk
 duration: 60         # long enough for several check-ins so a cadence (and its regularity) is visible
 
 capture: {host: h1, iface: h1-eth0}
 
 servers:
-  - {host: h1, module: traffic.udp_echo, args: {ports: "9999"}}      # C2 endpoint AND benign-heartbeat sink
+  - {host: h1, module: traffic.udp_echo, args: {ports: "9999"}}      # C2 endpoint AND benign-periodic sink
   - {host: h1, module: traffic.benign.services, args: {ports: "80,443,8080,22,3306,5432,8000,9000,25,110"}}
   - {host: h1, module: traffic.benign.iperf_server}
 
 attack:
-  # C2 beacons (traffic.periodic_client, RIGID regime). The interval range MATCHES the benign
-  # heartbeats below, so mean_iat/packet_count/duration/ports all overlap — the ONLY separators are
-  # timing regularity (low cv_iat) and payload consistency (low std_packet_size). Step 3's evasion
-  # raises jitter/size_jitter into the benign band while the beacon stays functional (still checks in).
+  # C2 beacons (traffic.periodic_client, RIGID regime). Interval MATCHES the benign periodic traffic
+  # below, so mean_iat/packet_count/duration/ports all overlap — the separators are timing regularity
+  # (low cv_iat) and payload consistency (low std_packet_size). The evasion raises jitter/size_jitter
+  # into the benign band while the beacon stays functional.
   - hosts: [h2, h3]
     class: c2
     module: traffic.periodic_client
@@ -27,22 +27,49 @@ attack:
       duration: 60
 
 benign:
-  # benign heartbeats / polling (SAME client + SAME interval range, LOOSE regime). Structurally
-  # identical to the beacons; naturally jittered timing and varied payloads are the confuser that
-  # stops beacon detection being trivial. This is the contested boundary the evasion must cross.
-  - hosts: [h4, h5]
+  # REALISM: a real network is full of REGULAR benign traffic (health checks, keepalives, telemetry,
+  # polling) — and a regular benign health-check is almost indistinguishable from a beacon at the flow
+  # level, which is exactly why flow-based C2 detection is hard. These profiles span the full
+  # regularity range so the detector CAN'T trivially hit 100%: the contested boundary is genuine.
+
+  # (a) RIGID benign — NTP / strict health-checks, genuinely as regular and size-consistent as a
+  # naive beacon (SAME jitter/size band as the C2 above). The detector CANNOT perfectly separate
+  # these from a beacon: this is the honest reason flow-based C2 detection isn't 100%, and it makes
+  # clean accuracy realistic (the detector will false-positive on some of this benign traffic).
+  - hosts: [h4]
     module: traffic.periodic_client
     args:
       target: "$h1"
       port: 9999
       interval: {range: [2.0, 8.0]}
-      jitter: {range: [0.3, 0.9]}
+      jitter: {range: [0.0, 0.2]}              # SAME regular band as the beacons -> genuine confusion
       payload_size: {range: [32, 128]}
-      size_jitter: {range: [0.3, 0.8]}
+      size_jitter: {range: [0.0, 0.15]}        # SAME consistent band as the beacons
       duration: 60
-  # non-periodic background so "benign" isn't ONLY periodic UDP (bursty TCP app + bulk transfer);
-  # easy negatives that add realism without touching the contested c2-vs-heartbeat boundary.
-  - hosts: [h6, h7]
+  # (b) moderately-regular benign keepalives / polling.
+  - hosts: [h5]
+    module: traffic.periodic_client
+    args:
+      target: "$h1"
+      port: 9999
+      interval: {range: [2.0, 8.0]}
+      jitter: {range: [0.15, 0.5]}
+      payload_size: {range: [32, 256]}
+      size_jitter: {range: [0.1, 0.4]}
+      duration: 60
+  # (c) loose benign polling / telemetry — clearly irregular periodic traffic (easy negatives).
+  - hosts: [h6]
+    module: traffic.periodic_client
+    args:
+      target: "$h1"
+      port: 9999
+      interval: {range: [1.0, 10.0]}
+      jitter: {range: [0.5, 1.1]}
+      payload_size: {range: [32, 512]}
+      size_jitter: {range: [0.4, 0.9]}
+      duration: 60
+  # (d) bursty TCP application traffic (short sessions across several ports, some failing).
+  - hosts: [h7]
     module: traffic.benign.app_client
     args:
       target: "$h1"
@@ -51,6 +78,7 @@ benign:
       n_ports: {range: [1, 14]}
       closed_ratio: {range: [0.0, 1.0]}
       n_connections: {range: [10, 50]}
+  # (e) bulk transfer.
   - hosts: [h8]
     module: traffic.benign.iperf_flow
     args: {target: "$h1", duration: {range: [15, 25]}}
