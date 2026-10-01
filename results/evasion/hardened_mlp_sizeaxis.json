@@ -1,0 +1,436 @@
+{
+  "detector": "classical_native_hardened",
+  "meta": {
+    "model": "classical_mlp",
+    "input_mode": "native",
+    "pca_components": null,
+    "test_accuracy": 1.0,
+    "benign_fpr": 0.0,
+    "n_features": 17,
+    "feature_names": [
+      "duration",
+      "packet_count",
+      "byte_count",
+      "mean_packet_size",
+      "std_packet_size",
+      "packets_per_second",
+      "bytes_per_second",
+      "syn_count",
+      "ack_count",
+      "fin_count",
+      "rst_count",
+      "mean_iat",
+      "std_iat",
+      "cv_iat",
+      "unique_dst_ports",
+      "unique_src_ports",
+      "protocol"
+    ],
+    "class_names": [
+      "benign",
+      "c2"
+    ],
+    "config": {
+      "hidden_sizes": [
+        32,
+        16
+      ],
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "epochs": 150,
+      "batch_size": 64,
+      "patience": 20,
+      "seed": 0,
+      "val_size": 0.15,
+      "test_size": 0.15,
+      "class_weight": "balanced"
+    },
+    "adversarially_trained": true
+  },
+  "config": {
+    "detector": "results/classical_native_hardened",
+    "data": "data/dataset.npz",
+    "seeds": 15,
+    "interval": 4.0,
+    "axis": "size_jitter",
+    "values": "0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.8",
+    "jitters": "0.0,0.1,0.2,0.3,0.5,0.8,1.2,2.0",
+    "fixed_jitter": 0.5,
+    "fixed_size_jitter": 0.0,
+    "window": 60.0,
+    "max_interval": 30.0,
+    "threshold": 0.5,
+    "full_grid": false,
+    "work_dir": "/tmp/evasion_work",
+    "out": "results/evasion/hardened_mlp_sizeaxis.json"
+  },
+  "summary": {
+    "n_beacons": 15,
+    "n_errored": 0,
+    "evasion_rate": 1.0,
+    "median_queries_to_evasion": 3,
+    "median_min_jitter": 0.2,
+    "per_seed": [
+      {
+        "seed": 0,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            1.3465309061880557e-05,
+            true
+          ],
+          [
+            0.1,
+            0.008017987868006756,
+            true
+          ],
+          [
+            0.2,
+            0.8096870382305335,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 1,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            4.56804882794187e-05,
+            true
+          ],
+          [
+            0.1,
+            0.11750084271965687,
+            true
+          ],
+          [
+            0.2,
+            0.9985116916249929,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 2,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.6155797483848424e-05,
+            true
+          ],
+          [
+            0.1,
+            0.04109966209560213,
+            true
+          ],
+          [
+            0.2,
+            0.9838667162607356,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 3,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.5173540451790976e-05,
+            true
+          ],
+          [
+            0.1,
+            0.027018860876924518,
+            true
+          ],
+          [
+            0.2,
+            0.9575930857381948,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 4,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            4.16344329337637e-05,
+            true
+          ],
+          [
+            0.1,
+            0.05961662527933092,
+            true
+          ],
+          [
+            0.2,
+            0.9927370550958072,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 5,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            4.5288782940418394e-05,
+            true
+          ],
+          [
+            0.1,
+            0.18510083553110598,
+            true
+          ],
+          [
+            0.2,
+            0.9991289217338717,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 6,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            6.855888906814148e-07,
+            true
+          ],
+          [
+            0.1,
+            0.00031462586149651385,
+            true
+          ],
+          [
+            0.2,
+            0.5276232771633032,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 7,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            5.164084064465312e-05,
+            true
+          ],
+          [
+            0.1,
+            0.1626600105219341,
+            true
+          ],
+          [
+            0.2,
+            0.997182718879272,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 8,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.3688479665977585e-05,
+            true
+          ],
+          [
+            0.1,
+            0.018554448924763215,
+            true
+          ],
+          [
+            0.2,
+            0.9530067995612947,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 9,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.548235845366099e-05,
+            true
+          ],
+          [
+            0.1,
+            0.030266537338710795,
+            true
+          ],
+          [
+            0.2,
+            0.9623055205037119,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 10,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.513744624956447e-05,
+            true
+          ],
+          [
+            0.1,
+            0.054354449578696944,
+            true
+          ],
+          [
+            0.2,
+            0.9897994303336877,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 11,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            4.028660885584412e-05,
+            true
+          ],
+          [
+            0.1,
+            0.05027339354385016,
+            true
+          ],
+          [
+            0.2,
+            0.990375102119943,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 12,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.0790252565909296e-05,
+            true
+          ],
+          [
+            0.1,
+            0.06507023094880184,
+            true
+          ],
+          [
+            0.2,
+            0.9949051243858282,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 13,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            3.1657777759537125e-05,
+            true
+          ],
+          [
+            0.1,
+            0.07380360901951236,
+            true
+          ],
+          [
+            0.2,
+            0.9945253684090344,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 14,
+        "evaded": true,
+        "errored": false,
+        "min_jitter": 0.2,
+        "queries": 3,
+        "trajectory": [
+          [
+            0.0,
+            1.1683514165786375e-05,
+            true
+          ],
+          [
+            0.1,
+            0.043009660661994596,
+            true
+          ],
+          [
+            0.2,
+            0.9896191680033769,
+            true
+          ]
+        ]
+      }
+    ]
+  }
+}
