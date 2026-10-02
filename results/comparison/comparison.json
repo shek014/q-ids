@@ -1,119 +1,119 @@
 {
   "mlp_matched": {
     "summary": {
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "macro_false_positive_rate": 0.0,
+      "accuracy": 0.873015873015873,
+      "macro_f1": 0.8534883720930232,
+      "macro_false_positive_rate": 0.12222222222222222,
       "per_class": {
         "benign": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.9512195121951219,
+          "recall": 0.8666666666666667,
+          "f1": 0.9069767441860465,
+          "false_positive_rate": 0.1111111111111111,
+          "roc_auc": 0.9432098765432099,
+          "pr_auc": 0.9791160655711451
         },
         "c2": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.7272727272727273,
+          "recall": 0.8888888888888888,
+          "f1": 0.7999999999999999,
+          "false_positive_rate": 0.13333333333333333,
+          "roc_auc": 0.9432098765432099,
+          "pr_auc": 0.8598649892619845
         }
       },
       "confusion_matrix": [
         [
-          45,
-          0
+          39,
+          6
         ],
         [
-          0,
-          18
+          2,
+          16
         ]
       ]
     },
     "param_count": 850,
     "n_features": 8,
     "input_mode": "matched",
-    "train_time_seconds": 0.09050775299965608
+    "train_time_seconds": 0.049963653000304475
   },
   "vqc": {
     "summary": {
-      "accuracy": 0.9682539682539683,
-      "macro_f1": 0.9623205741626795,
-      "macro_false_positive_rate": 0.022222222222222223,
+      "accuracy": 0.746031746031746,
+      "macro_f1": 0.6888888888888889,
+      "macro_false_positive_rate": 0.3111111111111111,
       "per_class": {
         "benign": {
-          "precision": 1.0,
-          "recall": 0.9555555555555556,
-          "f1": 0.9772727272727273,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.8222222222222222,
+          "recall": 0.8222222222222222,
+          "f1": 0.8222222222222222,
+          "false_positive_rate": 0.4444444444444444,
+          "roc_auc": 0.8333333333333335,
+          "pr_auc": 0.9384478640033933
         },
         "c2": {
-          "precision": 0.9,
-          "recall": 1.0,
-          "f1": 0.9473684210526316,
-          "false_positive_rate": 0.044444444444444446,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.5555555555555556,
+          "recall": 0.5555555555555556,
+          "f1": 0.5555555555555556,
+          "false_positive_rate": 0.17777777777777778,
+          "roc_auc": 0.8333333333333334,
+          "pr_auc": 0.5357802447253669
         }
       },
       "confusion_matrix": [
         [
-          43,
-          2
+          37,
+          8
         ],
         [
-          0,
-          18
+          8,
+          10
         ]
       ]
     },
     "param_count": 96,
     "n_features": 8,
     "input_mode": "matched",
-    "train_time_seconds": 22.64636008799971
+    "train_time_seconds": 17.780268577000243
   },
   "mlp_native": {
     "summary": {
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "macro_false_positive_rate": 0.0,
+      "accuracy": 0.8571428571428571,
+      "macro_f1": 0.8373027259684362,
+      "macro_false_positive_rate": 0.13333333333333333,
       "per_class": {
         "benign": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.95,
+          "recall": 0.8444444444444444,
+          "f1": 0.8941176470588236,
+          "false_positive_rate": 0.1111111111111111,
+          "roc_auc": 0.9345679012345679,
+          "pr_auc": 0.9770474371214813
         },
         "c2": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "false_positive_rate": 0.0,
-          "roc_auc": 1.0,
-          "pr_auc": 1.0
+          "precision": 0.6956521739130435,
+          "recall": 0.8888888888888888,
+          "f1": 0.7804878048780488,
+          "false_positive_rate": 0.15555555555555556,
+          "roc_auc": 0.9345679012345679,
+          "pr_auc": 0.8144261479971199
         }
       },
       "confusion_matrix": [
         [
-          45,
-          0
+          38,
+          7
         ],
         [
-          0,
-          18
+          2,
+          16
         ]
       ]
     },
     "param_count": 1138,
     "n_features": 17,
     "input_mode": "native",
-    "train_time_seconds": 0.10474918500040076
+    "train_time_seconds": 0.06600379099927522
   }
 }
