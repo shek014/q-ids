@@ -2,8 +2,8 @@
   "model": "classical_mlp",
   "input_mode": "native",
   "pca_components": null,
-  "test_accuracy": 1.0,
-  "benign_fpr": 0.0,
+  "test_accuracy": 0.8253968253968254,
+  "benign_fpr": 0.17777777777777778,
   "n_features": 17,
   "feature_names": [
     "duration",

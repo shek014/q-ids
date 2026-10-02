@@ -1,27 +1,27 @@
 {
   "classical": {
     "evasion_rate": 1.0,
-    "median_min_jitter": 0.4,
-    "mean_min_jitter": 0.4400000000000001
+    "median_min_jitter": 0.2,
+    "mean_min_jitter": 0.2366666666666667
   },
   "quantum": {
     "evasion_rate": 1.0,
-    "median_min_jitter": 0.45,
-    "mean_min_jitter": 0.47666666666666674
+    "median_min_jitter": 0.2,
+    "mean_min_jitter": 0.20000000000000007
   },
   "paired": {
     "n_paired": 15,
-    "mean_jitter_diff_vqc_minus_mlp": 0.03666666666666667,
-    "vqc_needed_more": 10,
-    "vqc_needed_less": 0,
-    "equal": 5
+    "mean_jitter_diff_vqc_minus_mlp": -0.03666666666666665,
+    "vqc_needed_more": 0,
+    "vqc_needed_less": 5,
+    "equal": 10
   },
   "transfer_mlp_evasion_to_vqc": {
-    "transfer_rate": 0.3333333333333333,
+    "transfer_rate": 1.0,
     "n": 15
   },
   "transfer_vqc_evasion_to_mlp": {
-    "transfer_rate": 1.0,
+    "transfer_rate": 0.6666666666666666,
     "n": 15
   },
   "threshold": 0.5,
