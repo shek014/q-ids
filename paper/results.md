@@ -37,7 +37,9 @@ functionality-preserving throughout.
 
 Both detectors are **evaded for 100% of beacon instances** at a trivial, cost-free level of timing
 jitter (median minimal jitter 0.20 — i.e. ≈ ±20% randomization of an otherwise-regular check-in
-interval) [Table 2, Fig. 2]. Randomizing check-in timing by this amount is a change real C2 malware
+interval) [Table 2, Fig. 1]. Figure 1 also shows that the VQC assigns P(benign) ≈ 0.44 to even a
+*rigid* beacon — it barely detects them at all, consistent with its 0.56 C2 recall — whereas the MLP
+starts confident (≈ 0.12) but crosses the decision threshold by jitter ≈ 0.2. Randomizing check-in timing by this amount is a change real C2 malware
 already performs to appear less robotic, and the beacon continues to reach its C2 throughout. A
 perfect-on-paper detection pipeline is therefore defeated, every time, by a change that costs the
 attacker essentially nothing.
@@ -87,7 +89,7 @@ the *timing* axis, so we hold timing jitter at an already-evading value and line
 previously-unused **payload-size-jitter** axis against the hardened MLP (Section 3.7). The hardened
 MLP — which the timing attack could no longer touch (0% evasion) — is **re-broken for 100% of beacon
 instances** at a trivial amount of size padding (median minimal `size_jitter` = 0.30, median 4
-queries to evasion) [Table 5]. Size padding is as functionally free as timing jitter: the beacon's
+queries to evasion) [Table 5, Fig. 2]. Size padding is as functionally free as timing jitter: the beacon's
 control channel is unaffected.
 
 Single-axis adversarial training therefore does not close the vulnerability; it **relocates** it to
