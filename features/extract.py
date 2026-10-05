@@ -97,10 +97,15 @@ def _flow_features(key, packets):
     }
 
 
-def extract_pcap(path, mac_labels, exclude_macs=(), default_label="benign"):
+def extract_pcap(path, mac_labels, exclude_macs=(), default_label="benign", class_names=None):
     """Returns (X, y): one feature row per (protocol, source MAC, destination) flow, labelled by
     source MAC via mac_labels (keys lower-cased); senders absent from the map fall back to
-    default_label, and flows whose source MAC is in exclude_macs are dropped entirely."""
+    default_label, and flows whose source MAC is in exclude_macs are dropped entirely.
+
+    class_names selects the label set (default features.dataset.CLASS_NAMES = benign,c2). The exfil
+    prototype study passes ["benign", "exfil"] so the same extractor serves a separate binary study
+    without touching the C2 pipeline."""
+    class_names = class_names or CLASS_NAMES
     mac_labels = {k.lower(): v for k, v in mac_labels.items()}
     exclude = {m.lower() for m in exclude_macs}
     flows = parse_pcap(path)
@@ -111,10 +116,10 @@ def extract_pcap(path, mac_labels, exclude_macs=(), default_label="benign"):
         if row["_src_mac"] in exclude:
             continue  # drop the capture/victim host's own traffic
         label = mac_labels.get(row["_src_mac"], default_label)
-        if label not in CLASS_NAMES:
-            continue  # unknown class name in the map — skip rather than mislabel
+        if label not in class_names:
+            continue  # label not in the selected class set — skip rather than mislabel
         X.append([row[name] for name in FEATURE_NAMES])
-        y.append(CLASS_NAMES.index(label))
+        y.append(class_names.index(label))
     if not X:
         return np.empty((0, len(FEATURE_NAMES))), np.empty((0,), dtype=int)
     return np.array(X, dtype=float), np.array(y, dtype=int)
@@ -124,7 +129,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pcap-dir", default="capture")
     parser.add_argument("--out", default="data/dataset.npz")
+    parser.add_argument("--classes", default=None,
+                        help="comma-separated class set (default benign,c2). Use 'benign,exfil' for "
+                             "the exfil prototype study.")
     args = parser.parse_args()
+
+    class_names = args.classes.split(",") if args.classes else list(CLASS_NAMES)
 
     pcap_dir = Path(args.pcap_dir)
     X_parts, y_parts = [], []
@@ -137,20 +147,20 @@ def main():
         mac_labels = sidecar_data.get("mac_labels", {})
         exclude_macs = sidecar_data.get("exclude_macs", [])
 
-        X, y = extract_pcap(pcap_path, mac_labels, exclude_macs=exclude_macs)
+        X, y = extract_pcap(pcap_path, mac_labels, exclude_macs=exclude_macs, class_names=class_names)
         if len(X) == 0:
             print(f"skipping {pcap_path.name}: no flows extracted")
             continue
         X_parts.append(X)
         y_parts.append(y)
-        counts = {name: int((y == i).sum()) for i, name in enumerate(CLASS_NAMES) if (y == i).any()}
+        counts = {name: int((y == i).sum()) for i, name in enumerate(class_names) if (y == i).any()}
         print(f"{pcap_path.name}: {len(X)} flows, {counts}")
 
     if not X_parts:
         raise SystemExit(f"no labelled pcaps found in {pcap_dir}")
 
     X, y = np.vstack(X_parts), np.concatenate(y_parts)
-    save_dataset(args.out, X, y)
+    save_dataset(args.out, X, y, class_names=class_names)
     print(f"wrote {len(X)} flows to {args.out}")
 
 

@@ -1,0 +1,82 @@
+name: exfil
+# PROTOTYPE second attack family. h1 victim/capture + collector + services; h2-h3 exfil (loud dumps);
+# h4-h5 low-rate benign transfers (the confusers); h6 moderate benign transfer; h7 app bursts; h8 periodic.
+hosts: 8
+duration: 60          # long enough that a throttled transfer's low throughput is visible as a long flow
+
+capture: {host: h1, iface: h1-eth0}
+
+servers:
+  - {host: h1, module: traffic.exfil_sink, args: {ports: "8443"}}       # exfil collector AND benign-transfer sink
+  - {host: h1, module: traffic.udp_echo, args: {ports: "9999"}}         # sink for the periodic keepalives (h8)
+  - {host: h1, module: traffic.benign.services, args: {ports: "80,443,8080,22,3306,5432,8000,9000,25,110"}}
+
+attack:
+  # Naive exfil (traffic.exfil_client, LOUD regime): dump a large payload FAST -> high
+  # bytes_per_second / packets_per_second and a short duration. The VOLUME band MATCHES the benign
+  # transfers below, so byte_count overlaps and cannot separate them — the only separator is
+  # THROUGHPUT (rate). The evasion throttles rate into the low-rate benign band, paying a time cost
+  # (the transfer takes longer and must still finish before the deadline = functional constraint).
+  - hosts: [h2, h3]
+    class: exfil
+    module: traffic.exfil_client
+    args:
+      target: "$h1"
+      port: 8443
+      volume: {range: [800000, 1500000]}
+      rate: {range: [400000, 800000]}          # HIGH throughput (naive dump); throttling this is the evasion
+      chunk_size: {choice: [2048, 4096, 8192]}
+      jitter: {range: [0.0, 0.1]}
+      deadline: 60
+
+benign:
+  # REALISM: a real network moves data for legitimate reasons at many rates — telemetry, log
+  # shipping, cloud sync, backups, downloads. The LOW-rate end is nearly indistinguishable from a
+  # throttled exfil at the flow level, which is exactly why throughput-based exfil detection is hard.
+
+  # (a) low-rate background transfers — telemetry / log-shipping / trickle sync. SAME volume band as
+  # the exfil above but LOW throughput: the genuine confuser the throttled exfil aims to hide among,
+  # and the honest reason clean accuracy isn't trivially 100%.
+  - hosts: [h4, h5]
+    module: traffic.exfil_client
+    args:
+      target: "$h1"
+      port: 8443
+      volume: {range: [800000, 1500000]}
+      rate: {range: [20000, 80000]}            # LOW throughput (trickle) -> the band the evasion targets
+      chunk_size: {choice: [2048, 4096, 8192]}
+      jitter: {range: [0.1, 0.4]}
+      deadline: 60
+  # (b) moderate-rate benign transfers — ordinary downloads / app data pulls.
+  - hosts: [h6]
+    module: traffic.exfil_client
+    args:
+      target: "$h1"
+      port: 8443
+      volume: {range: [300000, 900000]}
+      rate: {range: [100000, 300000]}
+      chunk_size: {choice: [2048, 4096, 8192]}
+      jitter: {range: [0.1, 0.5]}
+      deadline: 60
+  # (c) bursty TCP application traffic (short sessions across several ports, some failing) — easy
+  # negatives that keep the benign class from being all-transfers.
+  - hosts: [h7]
+    module: traffic.benign.app_client
+    args:
+      target: "$h1"
+      open_ports: "80,443,8080,22,3306,5432,8000,9000,25,110"
+      closed_ports: "1234,4321,6666,9999,31337,12345,4444,5555"
+      n_ports: {range: [1, 14]}
+      closed_ratio: {range: [0.0, 1.0]}
+      n_connections: {range: [10, 50]}
+  # (d) small periodic keepalives (interactive background over UDP).
+  - hosts: [h8]
+    module: traffic.periodic_client
+    args:
+      target: "$h1"
+      port: 9999
+      interval: {range: [1.0, 8.0]}
+      jitter: {range: [0.2, 0.8]}
+      payload_size: {range: [32, 256]}
+      size_jitter: {range: [0.2, 0.6]}
+      duration: 60
