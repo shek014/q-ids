@@ -58,6 +58,19 @@ command-and-control beaconing \sep quantum machine learning \sep adversarial rob
 \end{frontmatter}
 
 % =====================================================================
+% HIGHLIGHTS --- at submission these go in COSE's separate "Highlights" field,
+% not in the manuscript body. Kept here so they travel with the source.
+% Rule: 3-5 bullets, each <= 85 characters including spaces. \todo{trim/confirm with co-author}
+% =====================================================================
+\section*{Highlights}
+\begin{itemize}
+  \item Realizable, functionality-preserving evasion of flow-level ML intrusion detectors
+  \item C2 beacons evade classical and quantum detectors 100\% at trivial timing jitter
+  \item The quantum VQC offers no robustness advantage once the task is realistic
+  \item Single-axis adversarial training relocates the flaw to the next free axis
+\end{itemize}
+
+% =====================================================================
 \section{Introduction}
 \label{sec:intro}
 
@@ -529,8 +542,29 @@ not single-axis hardening).
 \todo{Draft with co-author.}
 
 % =====================================================================
-\section*{Data and code availability}
-\todo{Zenodo DOI + repo URL.}
+% REQUIRED DECLARATIONS (Computers & Security). Confirm wording with co-author.
+% =====================================================================
+\section*{CRediT authorship contribution statement}
+\textbf{Abhishek Ravicharan:} Conceptualization, Methodology, Software, Investigation,
+Data curation, Visualization, Writing -- original draft.
+\textbf{\todo{Co-author}:} Supervision, Writing -- review \& editing\todo{confirm roles}.
+
+\section*{Declaration of competing interest}
+The authors declare that they have no known competing financial interests or personal relationships
+that could have appeared to influence the work reported in this paper.
+
+\section*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or
+not-for-profit sectors.
+
+\section*{Ethics}
+This study was conducted entirely on an isolated, emulated network testbed (Mininet) using
+synthetically generated traffic. No human subjects, personal data, or production/third-party networks
+were involved, and all attack traffic was confined to the virtual topology.
+
+\section*{Data availability}
+The source code and captured datasets required to reproduce all results are publicly available.
+\todo{Add repository URL and archived Zenodo DOI.}
 
 \bibliographystyle{elsarticle-num}
 \bibliography{references}
