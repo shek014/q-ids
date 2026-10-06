@@ -1,7 +1,8 @@
 name: exfil
 # PROTOTYPE second attack family. h1 victim/capture + collector + services; h2-h3 exfil (loud dumps);
-# h4-h5 low-rate benign transfers (the confusers); h6 moderate benign transfer; h7 app bursts; h8 periodic.
-hosts: 8
+# h4-h5 low-rate benign transfers; h6 moderate benign; h9 HIGH-RATE benign bulk (the key confuser,
+# same throughput+volume band as exfil); h7 app bursts; h8 periodic.
+hosts: 9
 duration: 60          # long enough that a throttled transfer's low throughput is visible as a long flow
 
 capture: {host: h1, iface: h1-eth0}
@@ -57,6 +58,21 @@ benign:
       rate: {range: [100000, 300000]}
       chunk_size: {choice: [2048, 4096, 8192]}
       jitter: {range: [0.1, 0.5]}
+      deadline: 60
+  # (b2) HIGH-RATE benign bulk — legitimate backups / large downloads / DB replication, in the SAME
+  # throughput+volume band as the naive exfil above. This is the realism-critical confuser (the exfil
+  # analogue of C2's rigid-benign host): a detector that flags high throughput now catches naive exfil
+  # AND false-flags this benign bulk, so clean accuracy is realistic (<100%) with an honest FPR, and
+  # the only escape is to THROTTLE out of this band (the evasion) at the cost of the completion deadline.
+  - hosts: [h9]
+    module: traffic.exfil_client
+    args:
+      target: "$h1"
+      port: 8443
+      volume: {range: [800000, 1500000]}        # SAME volume band as the exfil
+      rate: {range: [300000, 700000]}            # overlaps the naive-exfil rate band -> genuine confusion
+      chunk_size: {choice: [2048, 4096, 8192]}
+      jitter: {range: [0.0, 0.2]}
       deadline: 60
   # (c) bursty TCP application traffic (short sessions across several ports, some failing) — easy
   # negatives that keep the benign class from being all-transfers.
