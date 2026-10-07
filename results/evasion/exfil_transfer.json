@@ -1,0 +1,47 @@
+{
+  "native_mlp": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 2.0,
+    "mean_min_throttle": 2.0
+  },
+  "matched_mlp": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 2.0,
+    "mean_min_throttle": 2.0
+  },
+  "quantum": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 0.0,
+    "mean_min_throttle": 0.0
+  },
+  "paired": {
+    "comparison": "matched_mlp_vs_vqc",
+    "n_paired": 15,
+    "mean_throttle_diff_vqc_minus_mlp": -2.0,
+    "vqc_needed_more": 0,
+    "vqc_needed_less": 15,
+    "equal": 0
+  },
+  "transfer_mlp_evasion_to_vqc": {
+    "transfer_rate": 1.0,
+    "n": 15
+  },
+  "transfer_vqc_evasion_to_mlp": {
+    "transfer_rate": 0.0,
+    "n": 15
+  },
+  "threshold": 0.5,
+  "throttles": [
+    0.0,
+    0.5,
+    1.0,
+    2.0,
+    3.0,
+    5.0,
+    8.0,
+    12.0,
+    20.0,
+    30.0
+  ],
+  "n_seeds": 15
+}
