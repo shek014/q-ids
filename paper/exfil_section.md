@@ -100,7 +100,27 @@ Transferability again follows detector strength [Table X3]: an evasion tuned to 
 VQC — often the naive exfil itself — evades the MLP in **0%** of cases. An attacker who defeats the
 stronger detector defeats the weaker one for free; the converse never holds.
 
-### X.4 Takeaway
+### X.4 Adversarial training and its cost
+We fold the functional throttled-exfil flows from sweep seeds 0–9 into each detector's training set as
+exfil and retrain, holding out seeds 10–14 for evaluation. For the **classical MLP the throttle evasion
+is defeated**: the held-out evasion that previously succeeded for 100% of instances succeeds for **0%**
+against both the native and matched hardened MLP — at a modest clean cost (native accuracy 0.847→0.806,
+benign FPR 0.185→0.148; matched accuracy unchanged at 0.847, FPR 0.185→0.204). The **VQC, however,
+cannot be hardened effectively**: it remains **100% evadable** (the median minimal throttle merely rises
+from 0.0 to 12.0) and pays the largest clean cost — accuracy 0.833→0.792 and benign FPR 0.111→0.259. As
+in the C2 study, *robustness is not the same as defensibility*: adversarial training helps the classical
+model but leaves the quantum one both evadable and markedly more false-positive-prone.
+
+**Axis escalation (open).** For C2 we showed that hardening the timing axis merely *relocated* the
+vulnerability to the payload-size axis. The analogous escalation for exfil — holding the rate at a
+hardened-evading value and attacking a second realizable axis — is the one remaining experiment, and
+its axis is less obvious than C2's (candidates: payload chunk-size / padding, or splitting the transfer
+across multiple connections). It requires a fresh capture sweep on that axis; we flag it as the next
+step and a point to confirm with the co-author. Note the contrast already visible here: unlike C2,
+single-axis hardening *does* close the throttle hole for the classical MLP, so whether exfil ultimately
+tells the same "defense merely relocates" story depends on this escalation.
+
+### X.5 Takeaway
 Across a second, structurally different attack family — different detectable signal (throughput vs.
 timing), different evasion axis (throttle vs. jitter), and a genuine functional *cost* to the evasion
 that C2 lacked — the conclusions are unchanged: a realistic flow-level detector is fully evaded by a
@@ -108,8 +128,6 @@ realizable, functionality-preserving perturbation, and the quantum classifier pr
 benefit (indeed less). The vulnerability is a property of flow-level learned detection under
 problem-space constraints, not of any one attack.
 
-> [TODO, optional] Hardening round: adversarially train on throttled exfil and report the FPR cost;
-> a clean *second* realizable axis for the escalation (as C2's jitter→size) is less obvious for exfil
-> (candidates: chunk-size/padding, multi-connection splitting) — decide with co-author whether to
-> include.
 > [TODO] Fold exfil into the figures (a second evasion curve, or a combined two-attack panel).
+> [TODO] Axis-escalation capture (see X.4) — needs a fresh sweep on a second realizable axis; confirm
+> the axis choice (chunk-size/padding vs. multi-connection splitting) with the co-author.
