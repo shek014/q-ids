@@ -32,10 +32,10 @@ Machine-Learning Intrusion Detectors: A C2-Beacon Evasion Study}
 \author[inst1]{Abhishek Ravicharan}
 \ead{abhishekravicharan@gmail.com}
 
-\author[inst1]{\todo{Co-author name}}
+\author[inst1]{Co-author Name (to confirm)}
 
-\affiliation[inst1]{organization={\todo{institution}},
-            country={}}
+\affiliation[inst1]{organization={Affiliation (to confirm)},
+            country={Country}}
 
 \begin{abstract}
 \todo{Write last, with the co-author.} Provisional one-paragraph stub:
@@ -248,7 +248,28 @@ ports, some failing; and (e) bulk transfer. The rigid benign traffic~(a) is a de
 detector cannot perfectly separate it from a beacon, which keeps clean accuracy realistic rather than
 saturated (Section~\ref{sec:results}). The beacons and periodic benign traffic (a--c) come from the
 \emph{same} generator differing only in the jitter/size regime; the role (hence label) is assigned per
-host. The contested boundary is therefore near-boundary by construction.
+host. The contested boundary is therefore near-boundary by construction (Table~\ref{tab:scenario}).
+
+\begin{table}[htbp]
+\centering
+\caption{Traffic generators in the C2 scenario (each run lasts 60\,s; host h1 is the victim/collector
+and is excluded from the dataset). All periodic hosts share the check-in interval range $[2,8]$\,s;
+beacons and rigid benign also share the payload range $[32,128]$\,B. The rigid benign host (h4) matches
+the beacon's jitter bands \emph{exactly}, making it an unresolvable confuser at the flow level.}
+\label{tab:scenario}
+\begin{tabular}{llcc}
+\toprule
+Host(s) & Role (label) & Timing jitter & Size jitter \\
+\midrule
+h2--h3 & C2 beacon (\emph{c2})                 & 0.0--0.2  & 0.0--0.15 \\
+h4     & Rigid benign, confuser (\emph{benign}) & 0.0--0.2  & 0.0--0.15 \\
+h5     & Moderate benign (\emph{benign})        & 0.15--0.5 & 0.1--0.4  \\
+h6     & Loose benign (\emph{benign})           & 0.5--1.1  & 0.4--0.9  \\
+h7     & TCP application bursts (\emph{benign}) & ---       & ---       \\
+h8     & Bulk transfer (\emph{benign})          & ---       & ---       \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Flow features and labeling}
 \label{sec:features}
@@ -270,6 +291,36 @@ the coefficient of variation of inter-arrival times---a scale-invariant measure 
 whereas naturally-jittered benign traffic has high \texttt{cv\_iat}, and (unlike raw \texttt{std\_iat})
 it does not conflate regularity with interval length.
 
+Formally, each flow is summarized by a feature vector $\mathbf{x}\in\mathbb{R}^{17}$
+(Table~\ref{tab:features}). Writing $\Delta_1,\dots,\Delta_m$ for a flow's inter-arrival times with mean
+$\mu_{\mathrm{IAT}}$ and standard deviation $\sigma_{\mathrm{IAT}}$, the timing-regularity feature is
+their coefficient of variation,
+\begin{equation}
+\texttt{cv\_iat} \;=\; \frac{\sigma_{\mathrm{IAT}}}{\mu_{\mathrm{IAT}}},
+\label{eq:cviat}
+\end{equation}
+which is scale-invariant: a rigid beacon has $\texttt{cv\_iat}\approx 0$ at any interval, whereas
+naturally-jittered benign traffic has $\texttt{cv\_iat}=\mathcal{O}(1)$.
+
+\begin{table}[htbp]
+\centering
+\caption{The 17 flow-level features, by group. \texttt{cv\_iat} (Eq.~\ref{eq:cviat}) is the primary
+timing-regularity signal; the problem-space evasion manipulates the timing and size groups.}
+\label{tab:features}
+\begin{tabular}{l p{0.70\linewidth}}
+\toprule
+Group & Features \\
+\midrule
+Volume \& size & \texttt{duration}, \texttt{packet\_count}, \texttt{byte\_count}, \texttt{mean\_packet\_size}, \texttt{std\_packet\_size} \\
+Throughput    & \texttt{packets\_per\_second}, \texttt{bytes\_per\_second} \\
+TCP flags     & \texttt{syn\_count}, \texttt{ack\_count}, \texttt{fin\_count}, \texttt{rst\_count} \\
+Timing        & \texttt{mean\_iat}, \texttt{std\_iat}, \texttt{cv\_iat} \\
+Ports         & \texttt{unique\_dst\_ports}, \texttt{unique\_src\_ports} \\
+Protocol      & \texttt{protocol} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Detectors and the matched-input protocol}
 \label{sec:detectors}
 We compare two detectors on an identical binary task (benign vs.\ C2).
@@ -286,6 +337,17 @@ followed by 4 \texttt{StronglyEntanglingLayers}, reading out one Pauli-$Z$ expec
 the first two wires, passed through a softmax and trained with cross-entropy (learning rate 0.05, batch
 size 16, up to 30 epochs, patience 8). Training uses exact gradients via the \texttt{default.qubit}
 state-vector simulator.
+Concretely, the PCA features $\mathbf{z}\in\mathbb{R}^{8}$ are angle-encoded as single-qubit $R_Y$
+rotations $U(\mathbf{z})$, a trainable \texttt{StronglyEntanglingLayers} block $V(\boldsymbol{\Theta})$
+is applied, and one Pauli-$Z$ expectation is read from each of the first two wires,
+\begin{equation}
+f_i(\mathbf{z};\boldsymbol{\Theta}) \;=\;
+\langle 0|\,U^{\dagger}(\mathbf{z})\,V^{\dagger}(\boldsymbol{\Theta})\,Z_i\,V(\boldsymbol{\Theta})\,U(\mathbf{z})\,|0\rangle,
+\qquad i\in\{0,1\},
+\label{eq:vqc}
+\end{equation}
+yielding class probabilities $P(\cdot\mid\mathbf{z})=\mathrm{softmax}\big(2\,\mathbf{f}(\mathbf{z};\boldsymbol{\Theta})\big)$.
+The circuit has $4\times 8\times 3 = 96$ trainable parameters.
 
 \paragraph{Matched inputs.} To make the comparison attributable to the model rather than the
 information it receives, both detectors are trained on \emph{identical} inputs for the comparison:
@@ -297,13 +359,72 @@ the detector a defender would actually deploy. All preprocessing transforms are 
 split only. The dataset comprises 420 flows (300 benign, 120 C2) split 70/15/15 into
 train/validation/test, stratified by class.
 
+Both detectors share the same preprocessing up to the model: raw features are standardized using
+training-split statistics and, in the matched regime, projected onto their first eight principal
+components,
+\begin{equation}
+\mathbf{z} \;=\; \mathbf{W}_{\mathrm{PCA}}^{\top}\big((\mathbf{x}-\boldsymbol{\mu})/\boldsymbol{\sigma}\big)\in\mathbb{R}^{8},
+\label{eq:pca}
+\end{equation}
+which retain 99.6\% of the variance (the division is per-feature); for the VQC each component is then
+affinely mapped into the $R_Y$ angle range. A detector outputs a posterior $P(\text{benign}\mid\cdot)$
+and flags a flow as malicious when
+\begin{equation}
+P(\text{benign}\mid\cdot) < \tau, \qquad \tau = 0.5 .
+\label{eq:decision}
+\end{equation}
+Table~\ref{tab:detectors} summarizes the two detectors and Table~\ref{tab:dataset} the dataset split.
+
+\begin{table}[htbp]
+\centering
+\caption{Detector architectures and training configuration. The matched MLP and the VQC receive
+identical PCA-8 inputs; the native MLP uses all 17 features. All models use the Adam optimizer,
+cross-entropy loss, and random seed 0.}
+\label{tab:detectors}
+\setlength{\tabcolsep}{4.5pt}\small
+\begin{tabular}{llll}
+\toprule
+ & MLP (native) & MLP (matched) & VQC \\
+\midrule
+Input                 & 17 features           & PCA-8                 & PCA-8 (angle-scaled) \\
+Architecture          & $17$--$32$--$16$--$2$ & $8$--$32$--$16$--$2$  & 8 qubits, 4 entang.\ layers \\
+Nonlinearity          & ReLU                  & ReLU                  & $R_Y$ embed.\ + entanglers \\
+Readout               & softmax               & softmax               & $Z$ on 2 wires $\to$ softmax \\
+Loss                  & balanced CE           & balanced CE           & CE \\
+Parameters            & 1138                  & 850                   & 96 \\
+Learning rate         & 0.01                  & 0.01                  & 0.05 \\
+Batch size            & 64                    & 64                    & 16 \\
+Max epochs (patience) & 150 (20)              & 150 (20)              & 30 (8) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Dataset composition and stratified 70/15/15 train/validation/test split (seed 0).}
+\label{tab:dataset}
+\begin{tabular}{lcccc}
+\toprule
+Class & Flows & Train & Val.\ & Test \\
+\midrule
+benign & 300 & 210 & 45 & 45 \\
+c2     & 120 &  84 & 18 & 18 \\
+\midrule
+Total  & 420 & 294 & 63 & 63 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Problem-space evasion}
 \label{sec:evasion}
 The evasion is a model-in-the-loop search for the smallest realizable, functionality-preserving
 perturbation that flips the detector's verdict to benign.
 
-\paragraph{Query primitive.} A single query takes a parameter vector $\theta = (\texttt{interval},
-\texttt{jitter}, \texttt{payload\_size}, \texttt{size\_jitter})$, generates a \emph{real} beacon with
+\paragraph{Query primitive.} A single query takes a parameter vector
+\[
+\theta = (\texttt{interval},\ \texttt{jitter},\ \texttt{payload\_size},\ \texttt{size\_jitter}),
+\]
+generates a \emph{real} beacon with
 those parameters in a short Mininet capture (a minimal two-host topology; beacon flow features are
 per-source-MAC and therefore independent of background traffic), extracts the beacon's flow, and
 returns its 17-feature vector. The capture window matches the 60\,s training window so query flows are
@@ -311,16 +432,40 @@ in-distribution with the trained detector.
 
 \paragraph{Functional oracle.} During each query the beacon logs the timestamp of every \emph{successful}
 (round-trip-confirmed) check-in. The beacon is deemed \emph{functional} iff it completed at least two
-successful check-ins and no gap between consecutive successful check-ins exceeded a maximum tolerable
-control-latency \texttt{MAX\_INTERVAL} (30\,s). This operationalizes ``the attack still works'': a
+successful check-ins and no silent period---including the stretches before the first and after the
+last check-in---exceeded a maximum tolerable control-latency $T_{\max}=30$\,s
+(\texttt{MAX\_INTERVAL}). Writing $t_1<\dots<t_C$ for the timestamps of the successful check-ins and
+$t_0$, $t_{C+1}$ for the start and end of the capture window,
+\begin{equation}
+\mathrm{Func}(\theta) \;=\; \mathbf{1}\!\left[\,C \ge 2 \;\wedge\; \max_{0\le k\le C}(t_{k+1}-t_k) \le T_{\max}\,\right].
+\label{eq:oracle}
+\end{equation}
+Including the window edges catches a beacon that falls silent partway through the capture. This
+operationalizes ``the attack still works'': a
 perturbation that silences the beacon or stretches its gaps past the operator's tolerance is
 inadmissible.
 
 \paragraph{Line search.} For a given detector and a given realizable axis, we fix the other parameters
-and sweep the axis over an ascending grid. For each beacon instance (seed) we find the minimal value at
-which the detector assigns $P(\text{benign}) \geq 0.5$ while the beacon remains functional---the minimal
-evading perturbation---and record the number of queries spent reaching it (queries-to-evasion). We
-report evasion success rate, the distribution of minimal evading perturbations, and queries-to-evasion.
+and sweep the axis over an ascending grid. Let $\Phi(\theta)$ denote generating a beacon with parameters $\theta$ as real traffic and extracting
+its 17-feature vector, and let $\theta\oplus\delta\mathbf{e}_a$ increment realizable axis $a$ by
+$\delta$. For each beacon instance (seed) the minimal evading perturbation is
+\begin{equation}
+\delta^{\star} \;=\; \min\big\{\,\delta\ge 0 \;:\;
+P(\text{benign}\mid\Phi(\theta\oplus\delta\mathbf{e}_a)) \ge \tau \;\wedge\; \mathrm{Func}(\theta\oplus\delta\mathbf{e}_a)=1\,\big\},
+\label{eq:evasion}
+\end{equation}
+the smallest functionality-preserving move along $a$ that flips the verdict (Eq.~\ref{eq:decision}). We
+find it by sweeping the ascending grid and record the queries spent reaching it (queries-to-evasion). We
+report evasion success rate, the distribution of $\delta^{\star}$, and queries-to-evasion.
+
+A \emph{beacon instance} is one fixed configuration---interval $4$\,s, payload $64$\,B, zero
+size-jitter---regenerated under a different random seed; all reported distributions are over 15 such
+instances, which probe seed-to-seed variation at a single operating point rather than a range of
+beacon configurations. The jitter axis is swept over the ascending grid
+$\{0,\,0.2,\,0.3,\,0.35,\,0.4,\,0.45,\,0.5,\,0.6,\,0.8\}$, so a reported minimal evading value is the
+smallest \emph{grid} point that evades: an upper bound on the true threshold at the grid's resolution.
+The $0$-to-$0.2$ gap in particular means a reported median of $0.2$ should be read as ``evades at
+jitter at most $0.2$''.
 We search the timing-jitter axis first (Section~\ref{sec:results}), and the payload-size-jitter axis for
 the defense escalation (Section~\ref{sec:defense}); both are functionally free in the sense that neither
 prevents a check-in.
@@ -330,9 +475,11 @@ prevents a check-in.
 To compare the two detectors on \emph{identical} traffic and to measure cross-model transfer, we
 decouple capture from scoring. A \emph{capture-once sweep} runs the full jitter grid for every beacon
 instance a single time, saving each flow's features and functional verdict with no detector in the
-loop. These flows are then scored \emph{offline against both detectors}, yielding (a) a \emph{paired}
-comparison of minimal evading jitter on the same flows, and (b) transferability: whether a beacon tuned
-to just evade one detector also evades the other. Because the captured flows are a property of the
+loop. These flows are then scored \emph{offline against each detector}, which is the single source of
+every evasion number we report: (a) each detector's evasion rate and minimal-evading-jitter
+distribution (Section~\ref{sec:jitter}), (b) a \emph{paired} comparison of minimal evading jitter on the
+same flows, and (c) transferability: whether a beacon tuned to just evade one detector also evades the
+other. Because the captured flows are a property of the
 attack and not of any detector, the same sweep is reused to evaluate every (including
 adversarially-trained) model, which also removes capture variance from the comparison.
 
@@ -363,11 +510,14 @@ jitter (\ref{sec:jitter}); the paired classical-vs-quantum comparison and transf
 On unmodified traffic the detectors are accurate but \emph{not} saturated, as intended by the realistic
 benign mix (Section~\ref{sec:testbed}). On the held-out test set (Table~\ref{tab:clean}), the classical
 MLP reaches $\approx$\,86--87\% accuracy; the quantum VQC is markedly weaker at 74.6\%, and its C2 $F_1$
-of 0.56 shows it detects only about half of the beacons. The non-trivial benign false-positive rates
+of 0.56 shows it detects only about half of the beacons. The test set is small (63 flows, 18 of them
+beacons), so the gap between the native and matched MLP (one flow) is within sampling noise and we do
+not read into it; the VQC's deficit is an order of magnitude larger. The non-trivial benign false-positive rates
 (13--18\%) are the honest cost of the task: the rigid benign traffic (NTP/health-check analogues) is
 nearly indistinguishable from a beacon at the flow level, so a detector that catches rigid beacons
 necessarily mislabels some rigid benign flows. This is the realistic operating point a flow-level C2
-detector faces, and the regime in which we evaluate evasion.
+detector faces (the class overlap is visible in Fig.~\ref{fig:overlap}), and the regime in which we
+evaluate evasion.
 
 \begin{table}[h]
 \centering
@@ -384,11 +534,22 @@ VQC           & PCA-8       & 0.746 & 0.56 & 0.56 & 0.178 \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig3_feature_overlap.pdf}
+\caption{Why clean detection is realistic rather than saturated: marginal distributions of the two
+evasion-axis features by class. The rigid benign confuser (NTP/health-check analogues) overlaps the C2
+beacons at low \texttt{cv\_iat} and low \texttt{std\_packet\_size}, so no flow-level threshold separates
+the classes cleanly---catching rigid beacons necessarily mislabels some benign traffic (the 13--18\%
+false-positive rate of Table~\ref{tab:clean}).}
+\label{fig:overlap}
+\end{figure}
+
 \subsection{Problem-space evasion via timing jitter}
 \label{sec:jitter}
-We line-search the timing-jitter axis (interval and size held fixed; Section~\ref{sec:evasion}) against
-each detector over 15 beacon instances, recording the minimal jitter at which the beacon is classified
-benign while remaining functional. The functional oracle confirmed that \emph{every} evading
+From the capture-once sweep (Section~\ref{sec:paired-method}) we extract, for each detector, the
+minimal jitter at which the beacon is classified benign while remaining functional, over the 15 beacon
+instances (timing jitter swept on the grid of Section~\ref{sec:evasion}; interval and size held fixed). The functional oracle confirmed that \emph{every} evading
 configuration remained operational ($\geq 2$ successful check-ins, no gap $> 30$\,s): evasion is
 functionality-preserving throughout.
 
@@ -399,7 +560,9 @@ VQC assigns $P(\text{benign}) \approx 0.44$ to even a \emph{rigid} beacon---it b
 all, consistent with its 0.56 C2 recall---whereas the MLP starts confident ($\approx 0.12$) but crosses
 the decision threshold by jitter $\approx 0.2$. Randomizing check-in timing by this amount is a change
 real C2 malware already performs to appear less robotic, and the beacon continues to reach its C2
-throughout. A perfect-on-paper detection pipeline is therefore defeated, every time, by a change that
+throughout; in feature space this walks the beacon out of its low-regularity corner into the
+benign-populated region (Fig.~\ref{fig:decisionspace}). A perfect-on-paper detection pipeline is
+therefore defeated, every time, by a change that
 costs the attacker essentially nothing.
 
 \begin{table}[h]
@@ -424,6 +587,16 @@ VQC & 100\% & 0.20 & 0.20 \\
 jitter increases (shaded band: $\pm 1$ s.d.\ across 15 instances). Both detectors cross the decision
 threshold at low jitter; the VQC barely detects even a rigid beacon.}
 \label{fig:evasion}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\linewidth]{fig4_decision_space.pdf}
+\caption{The evasion mechanism, as a 2D projection onto the two evasion axes. C2 beacons (triangles)
+occupy a low-regularity, low-size-variance corner; raising timing jitter increases \texttt{cv\_iat} and
+walks the beacon rightward (arrow) into the benign-populated region, where it is indistinguishable from
+benign traffic while remaining functional.}
+\label{fig:decisionspace}
 \end{figure}
 
 \subsection{Classical vs.\ quantum: paired comparison and transferability}

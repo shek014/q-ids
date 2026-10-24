@@ -1,12 +1,16 @@
+# Pinned to the versions that produced the paper's results (Python 3.14).
+
 # Model training and evaluation (runs anywhere)
-numpy
-pennylane
-pandas
-matplotlib
-pyyaml
+numpy==2.5.3
+pennylane==0.45.1
+autoray==0.8.4
+scipy==1.18.1
+pandas==3.0.6
+matplotlib==3.11.2
+PyYAML==6.0.3
 
 # Traffic generation and feature extraction (Linux only — see README > Prerequisites)
-scapy
+scapy==2.7.0
 
-# Mininet and nmap are installed as system packages, not via pip:
-#   sudo apt install mininet openvswitch-switch nmap tcpdump
+# Mininet, Open vSwitch, tcpdump and ethtool are system packages, not pip packages:
+#   sudo apt install mininet openvswitch-switch tcpdump ethtool

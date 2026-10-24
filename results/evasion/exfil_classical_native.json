@@ -1,0 +1,163 @@
+{
+  "detector": "exfil_classical_native",
+  "meta": {
+    "model": "classical_mlp",
+    "input_mode": "native",
+    "param_count": 1138,
+    "train_time_seconds": 0.029657256998689263,
+    "test_accuracy": 0.8472222222222222,
+    "n_features": 17,
+    "pca_components": null,
+    "pca_explained_variance_ratio": null,
+    "feature_names": [
+      "duration",
+      "packet_count",
+      "byte_count",
+      "mean_packet_size",
+      "std_packet_size",
+      "packets_per_second",
+      "bytes_per_second",
+      "syn_count",
+      "ack_count",
+      "fin_count",
+      "rst_count",
+      "mean_iat",
+      "std_iat",
+      "cv_iat",
+      "unique_dst_ports",
+      "unique_src_ports",
+      "protocol"
+    ],
+    "class_names": [
+      "benign",
+      "exfil"
+    ],
+    "config": {
+      "hidden_sizes": [
+        32,
+        16
+      ],
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "epochs": 150,
+      "batch_size": 64,
+      "patience": 20,
+      "seed": 0,
+      "val_size": 0.15,
+      "test_size": 0.15,
+      "class_weight": "balanced"
+    }
+  },
+  "config": {
+    "detector": "results/exfil_classical_native",
+    "data": "data/exfil_dataset.npz",
+    "seeds": 3,
+    "volume": 1200000,
+    "rate": 600000.0,
+    "chunk_size": 4096,
+    "jitter": 0.1,
+    "deadline": 60.0,
+    "throttles": "0.0,0.5,1.0,2.0,3.0,5.0,8.0,12.0,20.0,30.0",
+    "window": 65.0,
+    "threshold": 0.5,
+    "full_grid": false,
+    "work_dir": "/tmp/exfil_evasion_work",
+    "out": null
+  },
+  "summary": {
+    "n_exfil": 3,
+    "n_errored": 0,
+    "evasion_rate": 1.0,
+    "median_queries_to_evasion": 4,
+    "median_min_throttle": 2.0,
+    "per_seed": [
+      {
+        "seed": 0,
+        "evaded": true,
+        "errored": false,
+        "min_throttle": 2.0,
+        "queries": 4,
+        "trajectory": [
+          [
+            0.0,
+            0.11991261813123565,
+            true
+          ],
+          [
+            0.5,
+            0.17386079907644833,
+            true
+          ],
+          [
+            1.0,
+            0.20875720376104673,
+            true
+          ],
+          [
+            2.0,
+            0.6114128207414041,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 1,
+        "evaded": true,
+        "errored": false,
+        "min_throttle": 2.0,
+        "queries": 4,
+        "trajectory": [
+          [
+            0.0,
+            0.11968992570349433,
+            true
+          ],
+          [
+            0.5,
+            0.17359128186715148,
+            true
+          ],
+          [
+            1.0,
+            0.20853476917205285,
+            true
+          ],
+          [
+            2.0,
+            0.6029665972902638,
+            true
+          ]
+        ]
+      },
+      {
+        "seed": 2,
+        "evaded": true,
+        "errored": false,
+        "min_throttle": 2.0,
+        "queries": 4,
+        "trajectory": [
+          [
+            0.0,
+            0.11963442390810566,
+            true
+          ],
+          [
+            0.5,
+            0.17359559219248832,
+            true
+          ],
+          [
+            1.0,
+            0.20859836769247486,
+            true
+          ],
+          [
+            2.0,
+            0.6055944590040431,
+            true
+          ]
+        ]
+      }
+    ]
+  }
+}

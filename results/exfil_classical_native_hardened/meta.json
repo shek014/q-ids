@@ -1,9 +1,10 @@
 {
   "model": "classical_mlp",
-  "param_count": 1140,
-  "train_time_seconds": 0.876796500000637,
-  "test_accuracy": 1.0,
-  "n_features": 16,
+  "input_mode": "native",
+  "pca_components": null,
+  "test_accuracy": 0.8055555555555556,
+  "benign_fpr": 0.14814814814814814,
+  "n_features": 17,
   "feature_names": [
     "duration",
     "packet_count",
@@ -18,15 +19,14 @@
     "rst_count",
     "mean_iat",
     "std_iat",
+    "cv_iat",
     "unique_dst_ports",
     "unique_src_ports",
     "protocol"
   ],
   "class_names": [
     "benign",
-    "dos",
-    "recon",
-    "spoof"
+    "exfil"
   ],
   "config": {
     "hidden_sizes": [
@@ -42,5 +42,6 @@
     "val_size": 0.15,
     "test_size": 0.15,
     "class_weight": "balanced"
-  }
+  },
+  "adversarially_trained": true
 }

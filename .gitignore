@@ -181,7 +181,7 @@ cython_debug/
 .cursorindexingignore
 
 # q-ids project data
-# Datasets and captures are generated, not committed — see README > Planned repository layout.
+# Datasets and captures are generated, not committed — see README > Repository layout.
 data/*
 !data/.gitkeep
 capture/*
@@ -189,3 +189,15 @@ capture/*
 
 # scratch analysis scripts (throwaway, not part of the pipeline)
 tmp_*.py
+
+# LaTeX build artifacts (paper/tex/ is built locally or on Overleaf)
+paper/tex/*.aux
+paper/tex/*.bbl
+paper/tex/*.blg
+paper/tex/*.fdb_latexmk
+paper/tex/*.fls
+paper/tex/*.log
+paper/tex/*.out
+paper/tex/*.spl
+paper/tex/*.synctex.gz
+paper/tex/main.pdf

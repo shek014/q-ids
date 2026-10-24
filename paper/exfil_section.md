@@ -52,8 +52,9 @@ evading value, exactly as for jitter.
 
 The key structural difference from C2 is the **functional oracle**. For a beacon, raising jitter is
 essentially free. For exfiltration it is not: throttling stretches the transfer, and the full payload
-must still arrive before the deadline. The exfil is deemed **functional** iff the cumulative bytes
-delivered to the collector reach `volume` within the deadline (`MAX_DELIVERY` = 60 s here). Throttle
+must still arrive before the deadline. The exfil is deemed **functional** iff the cumulative bytes the
+client has transmitted reach `volume` within the deadline (60 s here); because the transfer runs over
+TCP, a completed send means those bytes are delivered to the collector. Throttle
 too far and the transfer cannot finish in time — an inadmissible perturbation. The evasion must
 therefore find a rate that is low enough to evade yet high enough to complete: the functional
 constraint can, in principle, *defeat* the attack, which it cannot for C2.
@@ -80,6 +81,12 @@ the classical MLP the median minimal throttle is 2.0 — the attacker slows from
 the evasion is **functionality-preserving**: here the functional constraint does not bite at the
 evading point. The naive exfil is confidently detected (P(benign) ≈ 0.12), and a modest,
 functionally-free reduction in rate walks it across the boundary into the benign-bulk/trickle region.
+
+Throttle is swept on the grid {0, 0.5, 1, 2, 3, 5, 8, 12, 20, 30}; every classical-MLP instance first
+evades at throttle 2.0, so the MLP's true minimal throttle lies in (1, 2] and the reported median is a
+grid-resolution upper bound (the VQC evades already at the naive throttle 0, below). As for C2, an "instance" is one fixed configuration — a 1.2 MB payload at a 600 KB/s base
+rate — regenerated under a different seed, so the 15 instances probe seed variation at a single
+operating point.
 
 | Detector | Evasion rate | Median min. throttle | Effective rate at evasion |
 |---|---|---|---|

@@ -1,0 +1,48 @@
+{
+  "model": "classical_mlp",
+  "input_mode": "native",
+  "param_count": 1138,
+  "train_time_seconds": 0.029657256998689263,
+  "test_accuracy": 0.8472222222222222,
+  "n_features": 17,
+  "pca_components": null,
+  "pca_explained_variance_ratio": null,
+  "feature_names": [
+    "duration",
+    "packet_count",
+    "byte_count",
+    "mean_packet_size",
+    "std_packet_size",
+    "packets_per_second",
+    "bytes_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "mean_iat",
+    "std_iat",
+    "cv_iat",
+    "unique_dst_ports",
+    "unique_src_ports",
+    "protocol"
+  ],
+  "class_names": [
+    "benign",
+    "exfil"
+  ],
+  "config": {
+    "hidden_sizes": [
+      32,
+      16
+    ],
+    "optimizer": "adam",
+    "learning_rate": 0.01,
+    "epochs": 150,
+    "batch_size": 64,
+    "patience": 20,
+    "seed": 0,
+    "val_size": 0.15,
+    "test_size": 0.15,
+    "class_weight": "balanced"
+  }
+}
