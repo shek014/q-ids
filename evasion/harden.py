@@ -29,11 +29,29 @@ def parse_seeds(spec):
     return [int(s) for s in spec.split(",")]
 
 
-def adversarial_flows(sweep, seeds):
-    """All captured, functional beacon flows from the given seeds — jittered beacons that a hardened
-    detector should still recognize as c2."""
+def split_instances(sweep, train_frac=0.67):
+    """Deterministic, config-stratified train/eval split OVER INSTANCES. Within each base config
+    (instances sorted by seed) the first round(n*train_frac) go to adversarial training and the rest
+    are held out for evasion evaluation (evasion/harden_eval.py recomputes the SAME split), so neither
+    set is biased toward an operating point and no capture leaks across the split. Falls back to a
+    single group for old single-config sweeps."""
+    n = sweep["features"].shape[0]
+    cfg_idx = sweep["inst_config_idx"] if "inst_config_idx" in sweep else np.zeros(n, int)
+    seeds = sweep["inst_seed"] if "inst_seed" in sweep else np.arange(n)
+    train, heldout = [], []
+    for c in np.unique(cfg_idx):
+        members = sorted(np.where(cfg_idx == c)[0], key=lambda i: int(seeds[i]))
+        k = round(len(members) * train_frac)
+        train += members[:k]
+        heldout += members[k:]
+    return sorted(int(i) for i in train), sorted(int(i) for i in heldout)
+
+
+def adversarial_flows(sweep, instances):
+    """All captured, functional beacon flows from the given INSTANCE indices — jittered beacons that a
+    hardened detector should still recognize as c2."""
     feats, got, func = sweep["features"], sweep["got"], sweep["functional"]
-    rows = [feats[si, ji] for si in seeds for ji in range(feats.shape[1])
+    rows = [feats[si, ji] for si in instances for ji in range(feats.shape[1])
             if got[si, ji] and func[si, ji]]
     return np.array(rows)
 
@@ -108,7 +126,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--sweep", default="results/evasion/sweep.npz")
     p.add_argument("--data", default="data/dataset.npz")
-    p.add_argument("--adv-seeds", default="0-9", help="sweep seeds folded into training (rest held out)")
+    p.add_argument("--train-frac", type=float, default=0.67,
+                   help="fraction of instances per config folded into adversarial training (rest held out)")
     p.add_argument("--mlp-config", default="configs/mlp.yaml")
     p.add_argument("--vqc-config", default="configs/vqc.yaml")
     args = p.parse_args()
@@ -121,13 +140,13 @@ def main():
         X, y, val_size=mlp_cfg["val_size"], test_size=mlp_cfg["test_size"], seed=mlp_cfg["seed"])
 
     sweep = np.load(args.sweep)
-    adv_seeds = parse_seeds(args.adv_seeds)
-    Xadv = adversarial_flows(sweep, adv_seeds)
+    train_idx, heldout_idx = split_instances(sweep, args.train_frac)
+    Xadv = adversarial_flows(sweep, train_idx)
     yadv = np.full(len(Xadv), c2_idx)
     Xtr_aug = np.vstack([Xtr, Xadv])
     ytr_aug = np.concatenate([ytr, yadv])
-    print(f"clean train {len(Xtr)} + {len(Xadv)} adversarial beacons (seeds {args.adv_seeds}) "
-          f"= {len(Xtr_aug)} train flows; clean test unchanged ({len(Xte)})\n")
+    print(f"clean train {len(Xtr)} + {len(Xadv)} adversarial beacons (train instances {train_idx}, "
+          f"{len(heldout_idx)} held out) = {len(Xtr_aug)} train flows; clean test unchanged ({len(Xte)})\n")
 
     aug = ((Xtr_aug, ytr_aug), (Xva, yva), (Xte, yte))
     print("retraining on augmented data (clean-test accuracy | benign false-positive rate):")

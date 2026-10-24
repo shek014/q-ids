@@ -10,7 +10,7 @@ import numpy as np
 
 from evasion.detector import Detector
 from evasion.transfer import min_evading_jitter, _stats
-from evasion.harden import parse_seeds
+from evasion.harden import split_instances
 
 
 def slice_sweep(sweep, seeds):
@@ -21,13 +21,15 @@ def slice_sweep(sweep, seeds):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--sweep", default="results/evasion/sweep.npz")
-    p.add_argument("--heldout", default="10-14")
+    p.add_argument("--train-frac", type=float, default=0.67,
+                   help="must match evasion.harden; the complementary held-out instances are evaluated")
     p.add_argument("--threshold", type=float, default=0.5)
     args = p.parse_args()
 
     sweep = np.load(args.sweep)
-    sub = slice_sweep(sweep, parse_seeds(args.heldout))
-    print(f"held-out seeds {args.heldout}: {sub['features'].shape[0]} beacons "
+    _, heldout_idx = split_instances(sweep, args.train_frac)
+    sub = slice_sweep(sweep, heldout_idx)
+    print(f"held-out instances {heldout_idx}: {sub['features'].shape[0]} beacons "
           f"x {sub['features'].shape[1]} jitter levels (jitter-only evasions)\n")
 
     print(f"{'model':30s}{'evasion rate':>14s}{'median jitter':>16s}")

@@ -8,7 +8,7 @@ import argparse
 
 from evasion.detector import Detector
 from evasion.exfil_transfer import min_evading_throttle, _stats
-from evasion.harden import parse_seeds
+from evasion.harden import split_instances
 import numpy as np
 
 
@@ -21,13 +21,15 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--sweep", default="results/evasion/exfil_sweep.npz")
     p.add_argument("--data", default="data/exfil_dataset.npz")
-    p.add_argument("--heldout", default="10-14")
+    p.add_argument("--train-frac", type=float, default=0.67,
+                   help="must match evasion.harden; the complementary held-out instances are evaluated")
     p.add_argument("--threshold", type=float, default=0.5)
     args = p.parse_args()
 
     sweep = np.load(args.sweep)
-    sub = slice_sweep(sweep, parse_seeds(args.heldout))
-    print(f"held-out seeds {args.heldout}: {sub['features'].shape[0]} exfils "
+    _, heldout_idx = split_instances(sweep, args.train_frac)
+    sub = slice_sweep(sweep, heldout_idx)
+    print(f"held-out instances {heldout_idx}: {sub['features'].shape[0]} exfils "
           f"x {sub['features'].shape[1]} throttle levels (throttle-only evasions)\n")
 
     print(f"{'model':38s}{'evasion rate':>14s}{'median throttle':>18s}")
