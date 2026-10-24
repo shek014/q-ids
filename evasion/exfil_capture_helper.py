@@ -28,8 +28,10 @@ def capture(theta, window, seed, out_dir):
     out.mkdir(parents=True, exist_ok=True)
     pcap_path = out / "query.pcap"
     log_path = out / "progress.log"
-    if log_path.exists():
-        log_path.unlink()
+    recv_path = out / "received.log"     # collector-side received totals, for the delivery cross-check
+    for p in (log_path, recv_path):
+        if p.exists():
+            p.unlink()
 
     net = Mininet(topo=IDSTopo(n_hosts=2), controller=OVSController, link=TCLink)
     net.start()
@@ -41,7 +43,8 @@ def capture(theta, window, seed, out_dir):
                     h.cmd(f"ethtool -K {intf.name} gso off tso off gro off lro off")
         net.staticArp()
 
-        sink = h1.popen(["python3", "-m", "traffic.exfil_sink", "--ports", str(EXFIL_PORT)])
+        sink = h1.popen(["python3", "-m", "traffic.exfil_sink",
+                         "--ports", str(EXFIL_PORT), "--log", str(recv_path)])
         time.sleep(1.0)
 
         exfil_cmd = [
@@ -61,6 +64,12 @@ def capture(theta, window, seed, out_dir):
             time.sleep(window + 1.0)
             if client.poll() is None:
                 client.terminate()
+        # give the collector a moment to flush the final per-connection total (it logs on connection
+        # EOF) before tearing the sink down, so the receiver-side delivery cross-check sees it
+        for _ in range(30):                              # up to ~3s
+            if recv_path.exists() and recv_path.stat().st_size > 0:
+                break
+            time.sleep(0.1)
         if sink.poll() is None:
             sink.terminate()
 

@@ -60,9 +60,13 @@ def run_query(theta, window=65.0, seed=0, work_dir=None):
     X, _ = extract_pcap(work / "query.pcap", mac_labels={meta["exfil_mac"]: "exfil"},
                         exclude_macs=[meta["capture_mac"]], class_names=["benign", "exfil"])
     features = X[0] if len(X) else None
+    recv_path = work / "received.log"
+    # pass None when the sink log was never wired (old captures) so the oracle falls back to client-side;
+    # an existing-but-empty log stays [] and fails receiver confirmation (nothing landed)
+    sink_progress = exfil_oracle.read_progress(recv_path) if recv_path.exists() else None
     func = exfil_oracle.evaluate(exfil_oracle.read_progress(work / "progress.log"),
                                  volume=int(theta["volume"]), deadline=deadline,
-                                 window_start=meta["window_start"])
+                                 window_start=meta["window_start"], sink_progress=sink_progress)
     return QueryResult(theta=dict(theta), features=features, functionality=func, n_flows=len(X))
 
 
@@ -85,7 +89,8 @@ def main():
     f = r.functionality
     print(f"\ntheta={theta}")
     print(f"effective rate: {effective_rate(theta):.0f} B/s   flows extracted: {r.n_flows}")
-    print(f"functional: {f.functional}  (delivered={f.bytes_delivered}/{f.volume}  "
+    print(f"functional: {f.functional}  (client_sent={f.bytes_delivered}/{f.volume}  "
+          f"sink_received={f.bytes_delivered_sink}  delivery_confirmed={f.delivery_confirmed}  "
           f"completion_time={f.completion_time}  deadline={f.deadline:.0f}s)")
     if r.features is not None:
         print("features:")
