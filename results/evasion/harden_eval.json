@@ -1,0 +1,37 @@
+{
+  "sweep": "results/evasion/sweep.npz",
+  "train_frac": 0.67,
+  "threshold": 0.5,
+  "held_out_instances": [
+    2,
+    5,
+    8
+  ],
+  "axis": "jitter",
+  "results": {
+    "classical_native": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.2
+    },
+    "classical_native_hardened": {
+      "evasion_rate": 0.3333333333333333,
+      "median_min_jitter": 0.4
+    },
+    "classical_matched": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.2
+    },
+    "classical_matched_hardened": {
+      "evasion_rate": 0.3333333333333333,
+      "median_min_jitter": 0.8
+    },
+    "quantum": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.05
+    },
+    "quantum_hardened": {
+      "evasion_rate": 0.3333333333333333,
+      "median_min_jitter": 0.3
+    }
+  }
+}

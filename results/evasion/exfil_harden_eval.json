@@ -1,0 +1,37 @@
+{
+  "sweep": "results/evasion/exfil_sweep.npz",
+  "train_frac": 0.67,
+  "threshold": 0.5,
+  "held_out_instances": [
+    2,
+    5,
+    8
+  ],
+  "axis": "throttle",
+  "results": {
+    "exfil_classical_native": {
+      "evasion_rate": 1.0,
+      "median_min_throttle": 2.0
+    },
+    "exfil_classical_native_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_throttle": 5.0
+    },
+    "exfil_classical_matched": {
+      "evasion_rate": 1.0,
+      "median_min_throttle": 1.5
+    },
+    "exfil_classical_matched_hardened": {
+      "evasion_rate": 0.0,
+      "median_min_throttle": null
+    },
+    "exfil_quantum": {
+      "evasion_rate": 1.0,
+      "median_min_throttle": 0.0
+    },
+    "exfil_quantum_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_throttle": 5.0
+    }
+  }
+}
