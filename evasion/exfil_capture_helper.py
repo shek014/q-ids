@@ -61,9 +61,18 @@ def capture(theta, window, seed, out_dir):
         with Capture(iface="h1-eth0", out_path=str(pcap_path), node=h1):
             t0 = time.time()
             client = h2.popen(exfil_cmd)
-            time.sleep(window + 1.0)
+            # adaptive wait: once the client exits (payload delivered, or it hit its own deadline) the
+            # exfil flow is over — no further packets come from it — so capturing the rest of the window
+            # only adds idle time. Poll until it exits, capped at window+1 (the client self-stops at its
+            # deadline, which is <= window), then drain briefly so the final packets land in the pcap.
+            # Flow features are identical to sleeping the full window; this just skips the idle tail for
+            # fast (low-throttle) transfers, which dominate the grid.
+            deadline_cap = t0 + window + 1.0
+            while client.poll() is None and time.time() < deadline_cap:
+                time.sleep(0.25)
             if client.poll() is None:
                 client.terminate()
+            time.sleep(1.0)                              # drain trailing packets into the capture
         # give the collector a moment to flush the final per-connection total (it logs on connection
         # EOF) before tearing the sink down, so the receiver-side delivery cross-check sees it
         for _ in range(30):                              # up to ~3s
