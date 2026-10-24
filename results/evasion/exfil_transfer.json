@@ -2,46 +2,217 @@
   "native_mlp": {
     "evasion_rate": 1.0,
     "median_min_throttle": 2.0,
-    "mean_min_throttle": 2.0
+    "mean_min_throttle": 2.0,
+    "median_bracket": [
+      1.75,
+      2.0
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.5,
+        "median_bracket": [
+          1.25,
+          1.5
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.0,
+        "median_bracket": [
+          1.75,
+          2.0
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.5,
+        "median_bracket": [
+          2.0,
+          2.5
+        ]
+      }
+    ]
   },
   "matched_mlp": {
     "evasion_rate": 1.0,
-    "median_min_throttle": 2.0,
-    "mean_min_throttle": 2.0
+    "median_min_throttle": 1.5,
+    "mean_min_throttle": 1.5833333333333333,
+    "median_bracket": [
+      1.25,
+      1.5
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.25,
+        "median_bracket": [
+          1.0,
+          1.25
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.0,
+        "median_bracket": [
+          1.75,
+          2.0
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.5,
+        "median_bracket": [
+          1.25,
+          1.5
+        ]
+      }
+    ]
   },
   "quantum": {
     "evasion_rate": 1.0,
     "median_min_throttle": 0.0,
-    "mean_min_throttle": 0.0
+    "mean_min_throttle": 0.5,
+    "median_bracket": [
+      0.0,
+      0.0
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 0.0,
+        "median_bracket": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 0.0,
+        "median_bracket": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.5,
+        "median_bracket": [
+          1.25,
+          1.5
+        ]
+      }
+    ]
   },
   "paired": {
     "comparison": "matched_mlp_vs_vqc",
-    "n_paired": 15,
-    "mean_throttle_diff_vqc_minus_mlp": -2.0,
-    "vqc_needed_more": 0,
-    "vqc_needed_less": 15,
-    "equal": 0
+    "n_paired": 9,
+    "mean_throttle_diff_vqc_minus_mlp": -1.0833333333333333,
+    "vqc_harder": 0,
+    "mlp_harder": 6,
+    "tie_at_grid_resolution": 3
   },
   "transfer_mlp_evasion_to_vqc": {
     "transfer_rate": 1.0,
-    "n": 15
+    "n": 9
   },
   "transfer_vqc_evasion_to_mlp": {
     "transfer_rate": 0.0,
-    "n": 15
+    "n": 9
   },
   "threshold": 0.5,
   "throttles": [
     0.0,
     0.5,
     1.0,
+    1.25,
+    1.5,
+    1.75,
     2.0,
+    2.5,
     3.0,
-    5.0,
-    8.0,
-    12.0,
-    20.0,
-    30.0
+    5.0
   ],
-  "n_seeds": 15
+  "n_instances": 9
 }

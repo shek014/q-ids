@@ -2,39 +2,142 @@
   "classical": {
     "evasion_rate": 1.0,
     "median_min_jitter": 0.2,
-    "mean_min_jitter": 0.2366666666666667
+    "mean_min_jitter": 0.2222222222222222,
+    "median_bracket": [
+      0.15,
+      0.2
+    ],
+    "per_config": [
+      {
+        "label": "interval=2.0",
+        "config": {
+          "interval": 2.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.2,
+        "median_bracket": [
+          0.15,
+          0.2
+        ]
+      },
+      {
+        "label": "interval=4.0",
+        "config": {
+          "interval": 4.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.2,
+        "median_bracket": [
+          0.15,
+          0.2
+        ]
+      },
+      {
+        "label": "interval=8.0",
+        "config": {
+          "interval": 8.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.25,
+        "median_bracket": [
+          0.2,
+          0.25
+        ]
+      }
+    ]
   },
   "quantum": {
     "evasion_rate": 1.0,
-    "median_min_jitter": 0.2,
-    "mean_min_jitter": 0.20000000000000007
+    "median_min_jitter": 0.05,
+    "mean_min_jitter": 0.11666666666666667,
+    "median_bracket": [
+      0.0,
+      0.05
+    ],
+    "per_config": [
+      {
+        "label": "interval=2.0",
+        "config": {
+          "interval": 2.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.0,
+        "median_bracket": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "label": "interval=4.0",
+        "config": {
+          "interval": 4.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.05,
+        "median_bracket": [
+          0.0,
+          0.05
+        ]
+      },
+      {
+        "label": "interval=8.0",
+        "config": {
+          "interval": 8.0,
+          "payload_size": 64,
+          "size_jitter": 0.0
+        },
+        "n": 3,
+        "evasion_rate": 1.0,
+        "median_min_jitter": 0.25,
+        "median_bracket": [
+          0.2,
+          0.25
+        ]
+      }
+    ]
   },
   "paired": {
-    "n_paired": 15,
-    "mean_jitter_diff_vqc_minus_mlp": -0.03666666666666665,
-    "vqc_needed_more": 0,
-    "vqc_needed_less": 5,
-    "equal": 10
+    "n_paired": 9,
+    "mean_jitter_diff_vqc_minus_mlp": -0.10555555555555556,
+    "vqc_harder": 1,
+    "mlp_harder": 7,
+    "tie_at_grid_resolution": 1
   },
   "transfer_mlp_evasion_to_vqc": {
-    "transfer_rate": 1.0,
-    "n": 15
+    "transfer_rate": 0.8888888888888888,
+    "n": 9
   },
   "transfer_vqc_evasion_to_mlp": {
-    "transfer_rate": 0.6666666666666666,
-    "n": 15
+    "transfer_rate": 0.2222222222222222,
+    "n": 9
   },
   "threshold": 0.5,
   "jitters": [
     0.0,
+    0.05,
+    0.1,
+    0.15,
     0.2,
+    0.25,
     0.3,
-    0.35,
     0.4,
-    0.45,
     0.5,
-    0.6,
     0.8
   ],
-  "n_seeds": 15
+  "n_instances": 9
 }
