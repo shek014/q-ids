@@ -2,9 +2,11 @@
 in hardening) against each EXFIL detector before and after hardening, offline (no captures, no root).
 Mirrors evasion/harden_eval.py (the C2 version):
 
-    .venv/bin/python -m evasion.exfil_harden_eval --sweep results/evasion/exfil_sweep.npz --heldout 10-14
+    .venv/bin/python -m evasion.exfil_harden_eval --sweep results/evasion/exfil_sweep.npz --out results/evasion/exfil_harden_eval.json
 """
 import argparse
+import json
+from pathlib import Path
 
 from evasion.detector import Detector
 from evasion.exfil_transfer import min_evading_throttle, _stats
@@ -24,6 +26,7 @@ def main():
     p.add_argument("--train-frac", type=float, default=0.67,
                    help="must match evasion.harden; the complementary held-out instances are evaluated")
     p.add_argument("--threshold", type=float, default=0.5)
+    p.add_argument("--out", default=None, help="write before/after evasion rates to this JSON file")
     args = p.parse_args()
 
     sweep = np.load(args.sweep)
@@ -32,6 +35,7 @@ def main():
     print(f"held-out instances {heldout_idx}: {sub['features'].shape[0]} exfils "
           f"x {sub['features'].shape[1]} throttle levels (throttle-only evasions)\n")
 
+    results = {}
     print(f"{'model':38s}{'evasion rate':>14s}{'median throttle':>18s}")
     for orig, hard in [("exfil_classical_native", "exfil_classical_native_hardened"),
                        ("exfil_classical_matched", "exfil_classical_matched_hardened"),
@@ -40,9 +44,16 @@ def main():
             det = Detector.from_result(f"results/{d}", args.data)
             ev, mj, _ = min_evading_throttle(det, sub, args.threshold)
             s = _stats(ev, mj)
+            results[d] = {"evasion_rate": s["evasion_rate"], "median_min_throttle": s["median_min_throttle"]}
             mj_str = f"{s['median_min_throttle']}" if s['median_min_throttle'] is not None else "-"
             print(f"{d:38s}{s['evasion_rate']:>14.2f}{mj_str:>18s}")
         print()
+
+    if args.out:
+        out = {"sweep": args.sweep, "train_frac": args.train_frac, "threshold": args.threshold,
+               "held_out_instances": [int(i) for i in heldout_idx], "axis": "throttle", "results": results}
+        Path(args.out).write_text(json.dumps(out, indent=2))
+        print(f"saved -> {args.out}")
 
 
 if __name__ == "__main__":

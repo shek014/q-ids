@@ -5,6 +5,8 @@ hardening, offline (no captures, no root):
     .venv/bin/python -m evasion.harden_eval --sweep results/evasion/sweep.npz --heldout 10-14
 """
 import argparse
+import json
+from pathlib import Path
 
 import numpy as np
 
@@ -24,6 +26,7 @@ def main():
     p.add_argument("--train-frac", type=float, default=0.67,
                    help="must match evasion.harden; the complementary held-out instances are evaluated")
     p.add_argument("--threshold", type=float, default=0.5)
+    p.add_argument("--out", default=None, help="write before/after evasion rates to this JSON file")
     args = p.parse_args()
 
     sweep = np.load(args.sweep)
@@ -32,16 +35,25 @@ def main():
     print(f"held-out instances {heldout_idx}: {sub['features'].shape[0]} beacons "
           f"x {sub['features'].shape[1]} jitter levels (jitter-only evasions)\n")
 
+    results = {}
     print(f"{'model':30s}{'evasion rate':>14s}{'median jitter':>16s}")
     for orig, hard in [("classical_native", "classical_native_hardened"),
+                       ("classical_matched", "classical_matched_hardened"),
                        ("quantum", "quantum_hardened")]:
         for d in (orig, hard):
             det = Detector.from_result(f"results/{d}")
             ev, mj, _ = min_evading_jitter(det, sub, args.threshold)
             s = _stats(ev, mj)
+            results[d] = {"evasion_rate": s["evasion_rate"], "median_min_jitter": s["median_min_jitter"]}
             mj_str = f"{s['median_min_jitter']}" if s['median_min_jitter'] is not None else "-"
             print(f"{d:30s}{s['evasion_rate']:>14.2f}{mj_str:>16s}")
         print()
+
+    if args.out:
+        out = {"sweep": args.sweep, "train_frac": args.train_frac, "threshold": args.threshold,
+               "held_out_instances": [int(i) for i in heldout_idx], "axis": "jitter", "results": results}
+        Path(args.out).write_text(json.dumps(out, indent=2))
+        print(f"saved -> {args.out}")
 
 
 if __name__ == "__main__":
