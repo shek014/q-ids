@@ -75,6 +75,36 @@ def fig_evasion_curve():
     save(fig, "fig1_evasion_curve")
 
 
+def fig_exfil_curve():
+    """Fig 5: P(benign) vs throttle for the exfil detectors, scored on the same swept flows — the
+    exfil analogue of Fig 1. Throttling the transfer lowers its throughput toward the benign low-rate
+    band; the curve rises as the detector increasingly calls the slowed exfil benign."""
+    sweep = np.load("results/evasion/exfil_sweep.npz")
+    thr = sweep["throttles"]
+    feats, got = sweep["features"], sweep["got"]
+    mlp = Detector.from_result("results/exfil_classical_native", "data/exfil_dataset.npz")
+    vqc = Detector.from_result("results/exfil_quantum", "data/exfil_dataset.npz")
+
+    fig, ax = plt.subplots(figsize=(3.6, 2.7))
+    for det, color, label in [(mlp, BLUE, "Classical MLP"), (vqc, VERM, "Quantum VQC")]:
+        means, stds = [], []
+        for ti in range(len(thr)):
+            ps = [det.prob_benign(feats[si, ti])[0] for si in range(feats.shape[0]) if got[si, ti]]
+            means.append(np.mean(ps)); stds.append(np.std(ps))
+        means, stds = np.array(means), np.array(stds)
+        ax.fill_between(thr, means - stds, means + stds, color=color, alpha=0.13, linewidth=0)
+        ax.plot(thr, means, color=color, lw=1.8, marker="o", ms=4, label=label)
+
+    ax.axhline(0.5, color=THRESH, lw=1.0, ls="--")
+    ax.text(thr[-1], 0.52, "decision threshold", ha="right", va="bottom", color=THRESH, fontsize=7)
+    ax.set_xlabel("Throttle (rate-reduction factor)")
+    ax.set_ylabel("P(benign)")
+    ax.set_ylim(-0.03, 1.03)
+    ax.set_xlim(thr[0], thr[-1])
+    ax.legend(frameon=False, loc="lower right")
+    save(fig, "fig5_exfil_curve")
+
+
 def fig_arms_race():
     """Fig 2: evasion rate across the defense arms race (vs the classical MLP)."""
     labels = ["Timing jitter\nvs. original", "Timing jitter\nvs. hardened",
@@ -159,6 +189,7 @@ def fig_decision_space():
 
 if __name__ == "__main__":
     fig_evasion_curve()
+    fig_exfil_curve()
     fig_arms_race()
     fig_feature_overlap()
     fig_decision_space()
