@@ -4,8 +4,8 @@
     "model": "classical_mlp",
     "input_mode": "native",
     "pca_components": null,
-    "test_accuracy": 0.8253968253968254,
-    "benign_fpr": 0.17777777777777778,
+    "test_accuracy": 0.8095238095238095,
+    "benign_fpr": 0.2,
     "n_features": 17,
     "feature_names": [
       "duration",
@@ -50,13 +50,14 @@
   "config": {
     "detector": "results/classical_native_hardened",
     "data": "data/dataset.npz",
-    "seeds": 15,
-    "interval": 4.0,
+    "intervals": "4",
+    "seeds_per_config": 5,
     "axis": "size_jitter",
-    "values": "0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.8",
-    "jitters": "0.0,0.1,0.2,0.3,0.5,0.8,1.2,2.0",
+    "values": "0,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.5",
+    "jitters": "0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.8,1.2,2.0",
     "fixed_jitter": 0.5,
     "fixed_size_jitter": 0.0,
+    "payload_size": 64,
     "window": 60.0,
     "max_interval": 30.0,
     "threshold": 0.5,
@@ -65,433 +66,133 @@
     "out": "results/evasion/hardened_mlp_sizeaxis.json"
   },
   "summary": {
-    "n_beacons": 15,
+    "n": 5,
     "n_errored": 0,
     "evasion_rate": 1.0,
-    "median_queries_to_evasion": 4,
-    "median_min_jitter": 0.3,
+    "median_queries_to_evasion": 3,
+    "median_min_jitter": 0.15,
+    "n_beacons": 5,
+    "per_config": {
+      "interval=4.0": {
+        "n": 5,
+        "n_errored": 0,
+        "evasion_rate": 1.0,
+        "median_queries_to_evasion": 3,
+        "median_min_jitter": 0.15
+      }
+    },
     "per_seed": [
       {
         "seed": 0,
+        "interval": 4.0,
         "evaded": true,
         "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
+        "min_jitter": 0.1,
+        "queries": 2,
         "trajectory": [
           [
             0.0,
-            0.03893873095407676,
+            0.3290142331720451,
             true
           ],
           [
             0.1,
-            0.1365327356493781,
-            true
-          ],
-          [
-            0.2,
-            0.4127523031000677,
-            true
-          ],
-          [
-            0.3,
-            0.7278770873984949,
+            0.592887335828869,
             true
           ]
         ]
       },
       {
         "seed": 1,
+        "interval": 4.0,
         "evaded": true,
         "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
+        "min_jitter": 0.1,
+        "queries": 2,
         "trajectory": [
           [
             0.0,
-            0.02563262575791918,
+            0.19663126586645277,
             true
           ],
           [
             0.1,
-            0.12802830077431093,
-            true
-          ],
-          [
-            0.2,
-            0.4518588028325396,
-            true
-          ],
-          [
-            0.3,
-            0.829772851347563,
+            0.5150116465384678,
             true
           ]
         ]
       },
       {
         "seed": 2,
+        "interval": 4.0,
         "evaded": true,
         "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
+        "min_jitter": 0.15,
+        "queries": 3,
         "trajectory": [
           [
             0.0,
-            0.012805400556941939,
+            0.1423946617231523,
             true
           ],
           [
             0.1,
-            0.057462449765635824,
+            0.3825969215732517,
             true
           ],
           [
-            0.2,
-            0.2389025646901155,
-            true
-          ],
-          [
-            0.3,
-            0.636735166215007,
+            0.15,
+            0.5474251925332225,
             true
           ]
         ]
       },
       {
         "seed": 3,
+        "interval": 4.0,
         "evaded": true,
         "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
+        "min_jitter": 0.15,
+        "queries": 3,
         "trajectory": [
           [
             0.0,
-            0.017282547965308304,
+            0.18098564704854908,
             true
           ],
           [
             0.1,
-            0.07252902560392195,
+            0.4371382712738377,
             true
           ],
           [
-            0.2,
-            0.28189378003751586,
-            true
-          ],
-          [
-            0.3,
-            0.6828810042566484,
+            0.15,
+            0.5954047524633036,
             true
           ]
         ]
       },
       {
         "seed": 4,
+        "interval": 4.0,
         "evaded": true,
         "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.01972814824908429,
-            true
-          ],
-          [
-            0.1,
-            0.08598155543994389,
-            true
-          ],
-          [
-            0.2,
-            0.31104344474873263,
-            true
-          ],
-          [
-            0.3,
-            0.693946147440655,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 5,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.014302002884362234,
-            true
-          ],
-          [
-            0.1,
-            0.10201134149775835,
-            true
-          ],
-          [
-            0.2,
-            0.4799888123919775,
-            true
-          ],
-          [
-            0.3,
-            0.8813408968654837,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 6,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.2,
+        "min_jitter": 0.15,
         "queries": 3,
         "trajectory": [
           [
             0.0,
-            0.10598295990813535,
+            0.13407986142430628,
             true
           ],
           [
             0.1,
-            0.3095654097251574,
+            0.37079583179892095,
             true
           ],
           [
-            0.2,
-            0.6071974763689226,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 7,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.03533134625476396,
-            true
-          ],
-          [
-            0.1,
-            0.15832712714734523,
-            true
-          ],
-          [
-            0.2,
-            0.4580524124343616,
-            true
-          ],
-          [
-            0.3,
-            0.8019557221624336,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 8,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.02132349218273544,
-            true
-          ],
-          [
-            0.1,
-            0.08310091047903537,
-            true
-          ],
-          [
-            0.2,
-            0.3224486832670203,
-            true
-          ],
-          [
-            0.3,
-            0.6656217533075077,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 9,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.018575673508346113,
-            true
-          ],
-          [
-            0.1,
-            0.07889645894701897,
-            true
-          ],
-          [
-            0.2,
-            0.29210056485434893,
-            true
-          ],
-          [
-            0.3,
-            0.6854701269330055,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 10,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.01371433341075914,
-            true
-          ],
-          [
-            0.1,
-            0.06646009320331962,
-            true
-          ],
-          [
-            0.2,
-            0.28131641767734333,
-            true
-          ],
-          [
-            0.3,
-            0.7291543556579628,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 11,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.017705799025559417,
-            true
-          ],
-          [
-            0.1,
-            0.0885802342560922,
-            true
-          ],
-          [
-            0.2,
-            0.3818187653290912,
-            true
-          ],
-          [
-            0.3,
-            0.7972788710626787,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 12,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.018124941742716342,
-            true
-          ],
-          [
-            0.1,
-            0.10186239840469109,
-            true
-          ],
-          [
-            0.2,
-            0.44278176683231807,
-            true
-          ],
-          [
-            0.3,
-            0.8366461459884047,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 13,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.2,
-        "queries": 3,
-        "trajectory": [
-          [
-            0.0,
-            0.027067399833175628,
-            true
-          ],
-          [
-            0.1,
-            0.14705209301255526,
-            true
-          ],
-          [
-            0.2,
-            0.5198483896068771,
-            true
-          ]
-        ]
-      },
-      {
-        "seed": 14,
-        "evaded": true,
-        "errored": false,
-        "min_jitter": 0.3,
-        "queries": 4,
-        "trajectory": [
-          [
-            0.0,
-            0.025084094287513414,
-            true
-          ],
-          [
-            0.1,
-            0.12459475050473212,
-            true
-          ],
-          [
-            0.2,
-            0.4664422185188544,
-            true
-          ],
-          [
-            0.3,
-            0.8081208931408284,
+            0.15,
+            0.525374213607718,
             true
           ]
         ]
