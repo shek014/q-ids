@@ -9,6 +9,10 @@ pandas==3.0.6
 matplotlib==3.11.2
 PyYAML==6.0.3
 
+# Baseline detectors (models/baselines) — reference models, not part of the MLP-vs-VQC comparison
+scikit-learn==1.9.1
+xgboost==3.4.1
+
 # Traffic generation and feature extraction (Linux only — see README > Prerequisites)
 scapy==2.7.0
 

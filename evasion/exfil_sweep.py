@@ -29,6 +29,39 @@ from features.dataset import FEATURE_NAMES
 DEFAULT_THROTTLES = "0.0,0.5,1.0,1.25,1.5,1.75,2.0,2.5,3.0,4.0,5.0,8.0,12.0,20.0,30.0"
 
 
+def _ckpt_path(out):
+    base = out[:-4] if out.endswith(".npz") else out
+    return base + ".partial.npz"
+
+
+def _atomic_savez(path, **arrays):
+    """Write to a temp file then rename, so a power cut mid-write never corrupts the checkpoint."""
+    import os
+    tmp = path[:-4] + ".tmp.npz"
+    np.savez(tmp, **arrays)
+    os.replace(tmp, path)
+
+
+def _resume(out, grid, labels, arrays):
+    """If a checkpoint for this exact sweep exists, load its arrays into `arrays` (in place) and return
+    the per-instance done mask; otherwise return None. A checkpoint from a different grid or instance
+    set is refused rather than silently mixed in."""
+    import os
+    path = _ckpt_path(out)
+    if not os.path.exists(path):
+        return None
+    d = np.load(path, allow_pickle=False)
+    same = (np.array_equal(d["grid"], np.array(grid))
+            and np.array_equal(d["inst_seed"], np.array(labels["inst_seed"]))
+            and np.array_equal(d["inst_config_idx"], np.array(labels["inst_config_idx"])))
+    if not same:
+        raise SystemExit(f"checkpoint {path} is from a different sweep (grid/instances differ); "
+                         "move it aside or use another --out")
+    for k in arrays:
+        arrays[k][...] = d[k]
+    return d["inst_done"].astype(bool)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--volumes", default="800000,1100000,1300000,1500000",
@@ -65,6 +98,20 @@ def main():
         theta = {**cfg, "throttle": throttle}
         return run_query(theta, window=args.window, seed=seed, work_dir=args.work_dir)
 
+    # checkpoint/resume: progress is saved after every instance to <out>.partial.npz; rerunning the
+    # same command after a crash or power cut skips finished instances instead of starting over.
+    state = {"features": features, "functional": functional, "got": got, "completion_time": completion_time, "delivery_confirmed": confirmed}
+    inst_done = _resume(args.out, grid, labels, state)
+    if inst_done is None:
+        inst_done = np.zeros(len(instances), dtype=bool)
+    else:
+        print(f"resuming from checkpoint: {int(inst_done.sum())}/{len(instances)} instances already done\n")
+
+    def checkpoint():
+        _atomic_savez(_ckpt_path(args.out), grid=np.array(grid), inst_done=inst_done,
+                      inst_seed=np.array(labels["inst_seed"]),
+                      inst_config_idx=np.array(labels["inst_config_idx"]), **state)
+
     # preflight so a dead OVS fails in ~1 min, not after a wasted hour
     print("preflight capture (naive, throttle=0)...")
     pf = one(instances[0][1], grid[0], instances[0][2])
@@ -74,8 +121,10 @@ def main():
     print(f"preflight ok (functional={pf.functionality.functional})\n")
 
     total = n_i * n_t
-    done = 0
+    done = int(inst_done.sum()) * n_t
     for ii, (ci, cfg, seed) in enumerate(instances):
+        if inst_done[ii]:
+            continue
         for ti, t in enumerate(grid):
             try:
                 r = one(cfg, t, seed)
@@ -96,6 +145,8 @@ def main():
             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} vol={cfg['volume']} seed={seed:2d}) "
                   f"throttle {t:<4} (~{er:.0f}B/s) {'flow' if got[ii, ti] else 'NOflow'} "
                   f"functional={functional[ii, ti]}")
+        inst_done[ii] = True
+        checkpoint()
 
     np.savez(args.out, features=features, functional=functional, got=got,
              completion_time=completion_time, delivery_confirmed=confirmed,
@@ -105,6 +156,8 @@ def main():
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
              schema_version=3, rate=args.rate, deadline=args.deadline, window=args.window)
+    import os
+    os.remove(_ckpt_path(args.out))   # final file written; checkpoint no longer needed
     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
           f"{len(configs)} configs) -> {args.out}")
 

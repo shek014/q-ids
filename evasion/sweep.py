@@ -35,6 +35,39 @@ from features.dataset import FEATURE_NAMES
 DEFAULT_JITTERS = "0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.8,1.2,2.0"
 
 
+def _ckpt_path(out):
+    base = out[:-4] if out.endswith(".npz") else out
+    return base + ".partial.npz"
+
+
+def _atomic_savez(path, **arrays):
+    """Write to a temp file then rename, so a power cut mid-write never corrupts the checkpoint."""
+    import os
+    tmp = path[:-4] + ".tmp.npz"
+    np.savez(tmp, **arrays)
+    os.replace(tmp, path)
+
+
+def _resume(out, grid, labels, arrays):
+    """If a checkpoint for this exact sweep exists, load its arrays into `arrays` (in place) and return
+    the per-instance done mask; otherwise return None. A checkpoint from a different grid or instance
+    set is refused rather than silently mixed in."""
+    import os
+    path = _ckpt_path(out)
+    if not os.path.exists(path):
+        return None
+    d = np.load(path, allow_pickle=False)
+    same = (np.array_equal(d["grid"], np.array(grid))
+            and np.array_equal(d["inst_seed"], np.array(labels["inst_seed"]))
+            and np.array_equal(d["inst_config_idx"], np.array(labels["inst_config_idx"])))
+    if not same:
+        raise SystemExit(f"checkpoint {path} is from a different sweep (grid/instances differ); "
+                         "move it aside or use another --out")
+    for k in arrays:
+        arrays[k][...] = d[k]
+    return d["inst_done"].astype(bool)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--intervals", default="2,4,6,8",
@@ -88,6 +121,20 @@ def main():
         return run_query(theta, window=args.window, max_interval=args.max_interval,
                          seed=seed, work_dir=args.work_dir)
 
+    # checkpoint/resume: progress is saved after every instance to <out>.partial.npz; rerunning the
+    # same command after a crash or power cut skips finished instances instead of starting over.
+    state = {"features": features, "functional": functional, "got": got}
+    inst_done = _resume(args.out, grid, labels, state)
+    if inst_done is None:
+        inst_done = np.zeros(len(instances), dtype=bool)
+    else:
+        print(f"resuming from checkpoint: {int(inst_done.sum())}/{len(instances)} instances already done\n")
+
+    def checkpoint():
+        _atomic_savez(_ckpt_path(args.out), grid=np.array(grid), inst_done=inst_done,
+                      inst_seed=np.array(labels["inst_seed"]),
+                      inst_config_idx=np.array(labels["inst_config_idx"]), **state)
+
     # preflight so a dead OVS fails in ~1 min, not after a wasted hour
     print("preflight capture...")
     pf = one(instances[0][1], grid[0], instances[0][2])
@@ -97,8 +144,10 @@ def main():
     print(f"preflight ok (functional={pf.functionality.functional})\n")
 
     total = n_i * n_j
-    done = 0
+    done = int(inst_done.sum()) * n_j
     for ii, (ci, cfg, seed) in enumerate(instances):
+        if inst_done[ii]:
+            continue
         for ji, j in enumerate(grid):
             try:
                 r = one(cfg, j, seed)
@@ -112,6 +161,8 @@ def main():
             done += 1
             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} int={cfg['interval']:<4} seed={seed:2d}) "
                   f"{axis} {j:<4} {'flow' if got[ii, ji] else 'NOflow'} functional={functional[ii, ji]}")
+        inst_done[ii] = True
+        checkpoint()
 
     grid_key = {"jitters": np.array(grid)} if axis == "jitter" else {}
     np.savez(args.out, features=features, functional=functional, got=got, **grid_key,
@@ -121,6 +172,8 @@ def main():
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
              schema_version=3, window=args.window, max_interval=args.max_interval)
+    import os
+    os.remove(_ckpt_path(args.out))   # final file written; checkpoint no longer needed
     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
           f"{len(configs)} configs) -> {args.out}")
 
