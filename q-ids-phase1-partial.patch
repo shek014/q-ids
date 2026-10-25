@@ -1,0 +1,532 @@
+diff --git a/configs/baselines.yaml b/configs/baselines.yaml
+new file mode 100644
+index 0000000..0b556bf
+--- /dev/null
++++ b/configs/baselines.yaml
+@@ -0,0 +1,21 @@
++# Reference detectors (models/baselines). Split must match configs/mlp.yaml and configs/vqc.yaml so
++# every detector is trained and tested on the identical flows.
++seed: 0
++val_size: 0.15
++test_size: 0.15
++
++rf:
++  n_estimators: 300
++  max_depth: null        # grow fully; min_samples_leaf regularizes
++  min_samples_leaf: 2
++
++xgb:
++  n_estimators: 400
++  max_depth: 4
++  learning_rate: 0.05
++  subsample: 0.9
++  colsample_bytree: 0.9
++  early_stopping_rounds: 30   # on the validation split
++
++threshold:
++  sharpness: 4.0         # logistic slope on the standardized feature; P=0.5 is exactly the fitted cut
+diff --git a/evasion/detector.py b/evasion/detector.py
+index d5325f8..51c759f 100644
+--- a/evasion/detector.py
++++ b/evasion/detector.py
+@@ -35,6 +35,12 @@ class Detector:
+         elif meta["model"] == "quantum_vqc":
+             from models.quantum.vqc import VQC   # lazy: only pull in pennylane for a VQC detector
+             model = VQC.load(str(result_dir / "model.npz"))
++        elif meta["model"] in ("random_forest", "xgboost"):
++            from models.baselines.models import TreeModel
++            model = TreeModel.load(result_dir / "model.pkl")
++        elif meta["model"] == "threshold":
++            from models.baselines.models import ThresholdDetector
++            model = ThresholdDetector.load(result_dir / "model.json")
+         else:
+             raise NotImplementedError(f"detector for model '{meta['model']}' not supported")
+ 
+@@ -88,5 +94,14 @@ class Detector:
+         """raw: (17,) or (n, 17). Returns P(benign) as a length-n array."""
+         return self.model.predict_proba(self.transform(raw))[:, self.benign_idx]
+ 
++    def prob_benign_grid(self, features, got):
++        """Score a whole sweep at once. features: (n_inst, n_grid, 17), got: (n_inst, n_grid) bool.
++        Returns P(benign) with nan where no flow was captured — one batched call instead of one model
++        call per flow (matters for the VQC)."""
++        out = np.full(got.shape, np.nan)
++        if got.any():
++            out[got] = self.prob_benign(features[got])
++        return out
++
+     def calls_benign(self, raw, threshold=0.5):
+         return bool(self.prob_benign(raw)[0] >= threshold)
+diff --git a/evasion/exfil_harden.py b/evasion/exfil_harden.py
+index 89dc816..d8ba628 100644
+--- a/evasion/exfil_harden.py
++++ b/evasion/exfil_harden.py
+@@ -18,7 +18,7 @@ import numpy as np
+ import yaml
+ 
+ from features.dataset import load_dataset, train_val_test_split
+-from evasion.harden import adversarial_flows, split_instances, train_mlp, train_vqc
++from evasion.harden import adversarial_flows, split_instances, train_baselines, train_mlp, train_vqc
+ 
+ 
+ def main():
+@@ -29,6 +29,8 @@ def main():
+                    help="fraction of instances per config folded into adversarial training (rest held out)")
+     p.add_argument("--mlp-config", default="configs/mlp.yaml")
+     p.add_argument("--vqc-config", default="configs/vqc.yaml")
++    p.add_argument("--baselines-config", default="configs/baselines.yaml")
++    p.add_argument("--no-baselines", action="store_true", help="skip retraining RF / XGBoost / threshold")
+     args = p.parse_args()
+ 
+     mlp_cfg = yaml.safe_load(open(args.mlp_config))
+@@ -56,6 +58,7 @@ def main():
+          train_mlp(aug, vqc_cfg["n_qubits"], mlp_cfg, class_names, Path("results/exfil_classical_matched_hardened"))),
+         ("exfil_quantum_hardened",
+          train_vqc(aug, vqc_cfg, class_names, Path("results/exfil_quantum_hardened"))),
++        *train_baselines(aug, args, class_names, prefix="exfil_"),
+     ]:
+         print(f"  {name:34s} acc={acc:.4f}  benign_FPR={fpr:.4f}")
+ 
+diff --git a/evasion/exfil_sweep.py b/evasion/exfil_sweep.py
+index 63985fd..75881bb 100644
+--- a/evasion/exfil_sweep.py
++++ b/evasion/exfil_sweep.py
+@@ -55,6 +55,11 @@ def main():
+     features = np.full((n_i, n_t, n_f), np.nan)
+     functional = np.zeros((n_i, n_t), dtype=bool)
+     got = np.zeros((n_i, n_t), dtype=bool)   # whether a flow was actually extracted
++    # completion time (s from window start; nan = never completed) and receiver-side confirmation
++    # (1 yes, 0 no, -1 no sink log). Stored so evasion/frontier.py can re-judge functionality for ANY
++    # deadline <= --deadline offline: a transfer that completes by D has the same flow either way.
++    completion_time = np.full((n_i, n_t), np.nan)
++    confirmed = np.full((n_i, n_t), -1, dtype=np.int8)
+ 
+     def one(cfg, throttle, seed):
+         theta = {**cfg, "throttle": throttle}
+@@ -81,6 +86,11 @@ def main():
+                 features[ii, ti] = r.features
+                 functional[ii, ti] = r.functionality.functional
+                 got[ii, ti] = True
++            f = r.functionality
++            if f.completion_time is not None:
++                completion_time[ii, ti] = f.completion_time
++            if f.delivery_confirmed is not None:
++                confirmed[ii, ti] = int(f.delivery_confirmed)
+             done += 1
+             er = effective_rate({"rate": cfg["rate"], "throttle": t})
+             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} vol={cfg['volume']} seed={seed:2d}) "
+@@ -88,11 +98,13 @@ def main():
+                   f"functional={functional[ii, ti]}")
+ 
+     np.savez(args.out, features=features, functional=functional, got=got,
++             completion_time=completion_time, delivery_confirmed=confirmed,
++             volumes=np.array([cfg["volume"] for _, cfg, _ in instances]),
+              throttles=np.array(grid), feature_names=np.array(FEATURE_NAMES),
+              config_table=np.array(labels["config_table"]),
+              inst_config_idx=np.array(labels["inst_config_idx"]),
+              inst_seed=np.array(labels["inst_seed"]),
+-             schema_version=2, rate=args.rate, deadline=args.deadline, window=args.window)
++             schema_version=3, rate=args.rate, deadline=args.deadline, window=args.window)
+     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
+           f"{len(configs)} configs) -> {args.out}")
+ 
+diff --git a/evasion/harden.py b/evasion/harden.py
+index 035beba..72a8977 100644
+--- a/evasion/harden.py
++++ b/evasion/harden.py
+@@ -122,6 +122,22 @@ def train_vqc(splits, cfg, class_names, out):
+     return acc, fpr
+ 
+ 
++def train_baselines(aug, args, class_names, prefix):
++    """Retrain RF / XGBoost / threshold on the augmented set into results/<prefix><kind>_hardened.
++    Yields (name, (acc, fpr)). Skipped with --no-baselines."""
++    if args.no_baselines:
++        return []
++    from models.baselines.train import fit_baseline
++    bcfg = yaml.safe_load(open(args.baselines_config))
++    out = []
++    for kind, short in [("random_forest", "rf"), ("xgboost", "xgb"), ("threshold", "threshold")]:
++        name = f"{prefix}{short}_hardened"
++        res = fit_baseline(kind, aug, bcfg, class_names, Path(f"results/{name}"),
++                           extra_meta={"adversarially_trained": True})
++        out.append((name, res))
++    return out
++
++
+ def main():
+     p = argparse.ArgumentParser(description=__doc__)
+     p.add_argument("--sweep", default="results/evasion/sweep.npz")
+@@ -130,6 +146,8 @@ def main():
+                    help="fraction of instances per config folded into adversarial training (rest held out)")
+     p.add_argument("--mlp-config", default="configs/mlp.yaml")
+     p.add_argument("--vqc-config", default="configs/vqc.yaml")
++    p.add_argument("--baselines-config", default="configs/baselines.yaml")
++    p.add_argument("--no-baselines", action="store_true", help="skip retraining RF / XGBoost / threshold")
+     args = p.parse_args()
+ 
+     mlp_cfg = yaml.safe_load(open(args.mlp_config))
+@@ -154,6 +172,7 @@ def main():
+         ("classical_native_hardened", train_mlp(aug, None, mlp_cfg, class_names, Path("results/classical_native_hardened"))),
+         ("classical_matched_hardened", train_mlp(aug, vqc_cfg["n_qubits"], mlp_cfg, class_names, Path("results/classical_matched_hardened"))),
+         ("quantum_hardened", train_vqc(aug, vqc_cfg, class_names, Path("results/quantum_hardened"))),
++        *train_baselines(aug, args, class_names, prefix=""),
+     ]:
+         print(f"  {name:28s} acc={acc:.4f}  benign_FPR={fpr:.4f}")
+ 
+diff --git a/evasion/sweep.py b/evasion/sweep.py
+index 670b08b..05240fd 100644
+--- a/evasion/sweep.py
++++ b/evasion/sweep.py
+@@ -13,6 +13,14 @@ instead of one repeated configuration.
+ 
+ Expensive: instances x grid live captures (no early stop). 20 instances x 15 jitters x ~65s is several
+ hours — wrap in systemd-inhibit and leave it. Reduce --seeds-per-config or the grid for a faster pass.
++
++Axis escalation (size padding against the jitter-hardened detectors) is the same capture-once sweep on
++the other axis, restricted to the held-out instances so nothing overlaps adversarial training, then
++scored offline against EVERY hardened detector (evasion/score.py --heldout):
++
++    sudo .venv/bin/python -m evasion.sweep --intervals 2,4,8 --seeds-per-config 10 \
++         --axis size_jitter --fixed-jitter 0.5 --only-heldout \
++         --values 0,0.05,0.1,0.15,0.2,0.3,0.4,0.6 --out results/evasion/sweep_sizeaxis.npz
+ """
+ import argparse
+ 
+@@ -33,27 +41,50 @@ def main():
+                    help="check-in intervals (s) to diversify base configs over")
+     p.add_argument("--seeds-per-config", type=int, default=5, help="RNG seeds per base config")
+     p.add_argument("--payload-size", type=int, default=64, help="fixed check-in payload (bytes)")
+-    p.add_argument("--size-jitter", type=float, default=0.0, help="fixed size jitter (jitter is swept)")
+-    p.add_argument("--jitters", default=DEFAULT_JITTERS)
++    p.add_argument("--size-jitter", type=float, default=0.0,
++                   help="fixed size jitter when sweeping jitter")
++    p.add_argument("--jitters", default=DEFAULT_JITTERS, help="grid when --axis jitter")
++    p.add_argument("--axis", default="jitter", choices=["jitter", "size_jitter"],
++                   help="realizable knob to sweep (size_jitter = axis escalation)")
++    p.add_argument("--values", default=None, help="grid for --axis (defaults to --jitters)")
++    p.add_argument("--fixed-jitter", type=float, default=0.5,
++                   help="held timing jitter when sweeping size_jitter (an already-evading value)")
++    p.add_argument("--only-heldout", action="store_true",
++                   help="capture only the instances evasion.harden holds out (same --train-frac)")
++    p.add_argument("--train-frac", type=float, default=0.67, help="must match evasion.harden")
+     p.add_argument("--window", type=float, default=60.0)
+     p.add_argument("--max-interval", type=float, default=30.0)
+     p.add_argument("--out", default="results/evasion/sweep.npz")
+     p.add_argument("--work-dir", default="/tmp/evasion_work")
+     args = p.parse_args()
+ 
+-    grid = [float(x) for x in args.jitters.split(",")]
++    axis = args.axis
++    grid = [float(x) for x in (args.values or args.jitters).split(",")]
+     intervals = [float(x) for x in args.intervals.split(",")]
+-    base = {"size_jitter": args.size_jitter, "payload_size": args.payload_size}
++    if axis == "jitter":
++        base = {"size_jitter": args.size_jitter, "payload_size": args.payload_size}
++    else:
++        base = {"jitter": args.fixed_jitter, "payload_size": args.payload_size}
+     configs = build_configs(base, interval=intervals)
+     instances, labels = expand_instances(configs, args.seeds_per_config)
++    if args.only_heldout:
++        from evasion.harden import split_instances
++        _, keep = split_instances({"features": np.zeros((len(instances), 1, 1)),
++                                   "inst_config_idx": np.array(labels["inst_config_idx"]),
++                                   "inst_seed": np.array(labels["inst_seed"])}, args.train_frac)
++        instances = [instances[i] for i in keep]
++        labels = {"config_table": labels["config_table"],
++                  "inst_config_idx": [labels["inst_config_idx"][i] for i in keep],
++                  "inst_seed": [labels["inst_seed"][i] for i in keep]}
++        print(f"--only-heldout: capturing {len(instances)} held-out instances")
+ 
+     n_i, n_j, n_f = len(instances), len(grid), len(FEATURE_NAMES)
+     features = np.full((n_i, n_j, n_f), np.nan)
+     functional = np.zeros((n_i, n_j), dtype=bool)
+     got = np.zeros((n_i, n_j), dtype=bool)   # whether a flow was actually extracted
+ 
+-    def one(cfg, jitter, seed):
+-        theta = {**cfg, "jitter": jitter}
++    def one(cfg, value, seed):
++        theta = {**cfg, axis: value}
+         return run_query(theta, window=args.window, max_interval=args.max_interval,
+                          seed=seed, work_dir=args.work_dir)
+ 
+@@ -72,7 +103,7 @@ def main():
+             try:
+                 r = one(cfg, j, seed)
+             except Exception as e:  # noqa: BLE001 - keep the campaign alive through a flaky capture
+-                print(f"  inst {ii} (cfg {ci} interval={cfg['interval']} seed={seed}) jitter {j}: FAILED ({e})")
++                print(f"  inst {ii} (cfg {ci} interval={cfg['interval']} seed={seed}) {axis} {j}: FAILED ({e})")
+                 continue
+             if r.features is not None:
+                 features[ii, ji] = r.features
+@@ -80,14 +111,16 @@ def main():
+                 got[ii, ji] = True
+             done += 1
+             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} int={cfg['interval']:<4} seed={seed:2d}) "
+-                  f"jitter {j:<4} {'flow' if got[ii, ji] else 'NOflow'} functional={functional[ii, ji]}")
++                  f"{axis} {j:<4} {'flow' if got[ii, ji] else 'NOflow'} functional={functional[ii, ji]}")
+ 
+-    np.savez(args.out, features=features, functional=functional, got=got,
+-             jitters=np.array(grid), feature_names=np.array(FEATURE_NAMES),
++    grid_key = {"jitters": np.array(grid)} if axis == "jitter" else {}
++    np.savez(args.out, features=features, functional=functional, got=got, **grid_key,
++             values=np.array(grid), axis=axis, fixed_jitter=args.fixed_jitter,
++             heldout_only=args.only_heldout, feature_names=np.array(FEATURE_NAMES),
+              config_table=np.array(labels["config_table"]),
+              inst_config_idx=np.array(labels["inst_config_idx"]),
+              inst_seed=np.array(labels["inst_seed"]),
+-             schema_version=2, window=args.window, max_interval=args.max_interval)
++             schema_version=3, window=args.window, max_interval=args.max_interval)
+     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
+           f"{len(configs)} configs) -> {args.out}")
+ 
+diff --git a/models/baselines/__init__.py b/models/baselines/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/models/baselines/models.py b/models/baselines/models.py
+new file mode 100644
+index 0000000..09abb40
+--- /dev/null
++++ b/models/baselines/models.py
+@@ -0,0 +1,115 @@
++"""Reference detectors the MLP/VQC are compared against: the models a flow-level NIDS would actually
++deploy (Random Forest, gradient-boosted trees) and a single-feature statistical rule of the kind
++beacon hunters use (low inter-arrival-time CV => beacon; high throughput => bulk exfil).
++
++These deliberately use library implementations. The "no framework" rule in the README applies to the
++MLP-vs-VQC comparison (both written out so neither gets a better-optimized engine); baselines exist to
++show where that comparison sits relative to standard practice, so they should be the standard thing.
++
++Every model exposes predict_proba(X) -> (n, n_classes), predict(X), param_count(), save(), load(), so
++evasion/detector.py can wrap them exactly like the MLP and VQC.
++"""
++import json
++import pickle
++
++import numpy as np
++
++
++def _sigmoid(z):
++    return 1.0 / (1.0 + np.exp(-np.clip(z, -50, 50)))
++
++
++class ThresholdDetector:
++    """One feature, one cut. Flags the attack class when the (standardized) feature is on the attack
++    side of `threshold`. The direction and cut are fit on train to maximize balanced accuracy, so it is
++    the best possible single-threshold rule on that feature. predict_proba is a logistic of the signed
++    margin (sharpness k): exactly the rule at P=0.5, but graded, so it can be operated at any FPR."""
++
++    def __init__(self, feature_idx, feature_name, sharpness=4.0, attack_idx=1, n_classes=2):
++        self.feature_idx = int(feature_idx)
++        self.feature_name = feature_name
++        self.sharpness = float(sharpness)
++        self.attack_idx = int(attack_idx)
++        self.n_classes = int(n_classes)
++        self.threshold = None
++        self.attack_below = None   # True: attack if x < threshold (e.g. low cv_iat beacon)
++
++    def fit(self, X, y):
++        x = X[:, self.feature_idx]
++        is_att = y == self.attack_idx
++        u = np.unique(x)
++        cands = (u[:-1] + u[1:]) / 2 if len(u) > 1 else u
++        best = (-1.0, None, None)
++        for below in (True, False):
++            for t in cands:
++                pred = (x < t) if below else (x > t)
++                tpr = pred[is_att].mean() if is_att.any() else 0.0
++                tnr = (~pred[~is_att]).mean() if (~is_att).any() else 0.0
++                bal = 0.5 * (tpr + tnr)
++                if bal > best[0]:
++                    best = (bal, float(t), below)
++        _, self.threshold, self.attack_below = best
++        return self
++
++    def predict_proba(self, X):
++        x = np.atleast_2d(X)[:, self.feature_idx]
++        margin = (self.threshold - x) if self.attack_below else (x - self.threshold)
++        p_att = _sigmoid(self.sharpness * margin)
++        out = np.zeros((len(x), self.n_classes))
++        out[:, self.attack_idx] = p_att
++        out[:, 1 - self.attack_idx] = 1.0 - p_att
++        return out
++
++    def predict(self, X):
++        return np.argmax(self.predict_proba(X), axis=1)
++
++    def param_count(self):
++        return 2   # threshold + direction
++
++    def save(self, path):
++        with open(path, "w") as f:
++            json.dump({"feature_idx": self.feature_idx, "feature_name": self.feature_name,
++                       "sharpness": self.sharpness, "attack_idx": self.attack_idx,
++                       "n_classes": self.n_classes, "threshold": self.threshold,
++                       "attack_below": self.attack_below}, f, indent=2)
++
++    @classmethod
++    def load(cls, path):
++        with open(path) as f:
++            d = json.load(f)
++        m = cls(d["feature_idx"], d["feature_name"], d["sharpness"], d["attack_idx"], d["n_classes"])
++        m.threshold, m.attack_below = d["threshold"], d["attack_below"]
++        return m
++
++
++class TreeModel:
++    """Thin wrapper over a fitted sklearn RandomForestClassifier or xgboost XGBClassifier, giving it the
++    same save/load/param_count surface as the MLP and VQC."""
++
++    def __init__(self, est, kind):
++        self.est = est
++        self.kind = kind
++
++    def predict_proba(self, X):
++        return self.est.predict_proba(np.atleast_2d(X))
++
++    def predict(self, X):
++        return np.argmax(self.predict_proba(X), axis=1)
++
++    def param_count(self):
++        """Total tree nodes — the closest analogue of a parameter count for an ensemble."""
++        if self.kind == "random_forest":
++            return int(sum(t.tree_.node_count for t in self.est.estimators_))
++        df = self.est.get_booster().trees_to_dataframe()
++        return int(len(df))
++
++    def save(self, path):
++        with open(path, "wb") as f:
++            pickle.dump({"kind": self.kind, "est": self.est}, f)
++
++    @classmethod
++    def load(cls, path):
++        # only ever loads files this pipeline wrote into results/ — never an untrusted pickle
++        with open(path, "rb") as f:
++            d = pickle.load(f)
++        return cls(d["est"], d["kind"])
+diff --git a/models/baselines/train.py b/models/baselines/train.py
+new file mode 100644
+index 0000000..1e759b5
+--- /dev/null
++++ b/models/baselines/train.py
+@@ -0,0 +1,120 @@
++"""Train a reference detector (Random Forest, XGBoost, or a single-feature threshold rule) on the same
++split as the MLP/VQC, on the native 17 features. Writes the same result-dir layout as the other
++trainers (model file, prep.npz, meta.json, history.npz, test_predictions.npz), so evasion scoring and
++hardening treat it like any other detector.
++
++    python -m models.baselines.train --kind rf  --data data/dataset.npz --out results/rf
++    python -m models.baselines.train --kind xgb --data data/dataset.npz --out results/xgb
++    python -m models.baselines.train --kind threshold --feature cv_iat --data data/dataset.npz \
++        --out results/threshold
++    # exfil: same, with --data data/exfil_dataset.npz and --feature bytes_per_second for the rule
++"""
++import argparse
++import json
++import time
++from pathlib import Path
++
++import numpy as np
++import yaml
++
++from features.dataset import FEATURE_NAMES, load_dataset, preprocess, train_val_test_split
++from models.baselines.models import ThresholdDetector, TreeModel
++
++KIND_TO_MODEL = {"rf": "random_forest", "xgb": "xgboost", "threshold": "threshold"}
++MODEL_FILE = {"random_forest": "model.pkl", "xgboost": "model.pkl", "threshold": "model.json"}
++
++
++def default_feature(class_names):
++    """The signal each attack family's detector keys on: timing regularity for C2, throughput for exfil."""
++    return "bytes_per_second" if "exfil" in class_names else "cv_iat"
++
++
++def _fit(kind, Xtr, ytr, Xva, yva, cfg, class_names, feature):
++    attack_idx = 1 - class_names.index("benign")
++    if kind == "random_forest":
++        from sklearn.ensemble import RandomForestClassifier
++        c = cfg["rf"]
++        est = RandomForestClassifier(n_estimators=c["n_estimators"], max_depth=c.get("max_depth"),
++                                     min_samples_leaf=c.get("min_samples_leaf", 1),
++                                     class_weight="balanced", random_state=cfg["seed"], n_jobs=-1)
++        est.fit(Xtr, ytr)
++        return TreeModel(est, kind)
++    if kind == "xgboost":
++        from xgboost import XGBClassifier
++        c = cfg["xgb"]
++        n_pos, n_neg = int((ytr == attack_idx).sum()), int((ytr != attack_idx).sum())
++        est = XGBClassifier(n_estimators=c["n_estimators"], max_depth=c["max_depth"],
++                            learning_rate=c["learning_rate"], subsample=c["subsample"],
++                            colsample_bytree=c["colsample_bytree"],
++                            scale_pos_weight=n_neg / max(n_pos, 1) if attack_idx == 1 else n_pos / max(n_neg, 1),
++                            early_stopping_rounds=c["early_stopping_rounds"], eval_metric="logloss",
++                            random_state=cfg["seed"], n_jobs=-1)
++        est.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
++        return TreeModel(est, kind)
++    if kind == "threshold":
++        m = ThresholdDetector(FEATURE_NAMES.index(feature), feature, cfg["threshold"]["sharpness"],
++                              attack_idx=attack_idx, n_classes=len(class_names))
++        return m.fit(Xtr, ytr)
++    raise ValueError(kind)
++
++
++def fit_baseline(kind, splits, cfg, class_names, out, feature=None, extra_meta=None):
++    """kind: random_forest | xgboost | threshold. splits: ((Xtr,ytr),(Xva,yva),(Xte,yte)) of RAW
++    features. Standardizes (fit on train; a monotone per-feature map, so it changes nothing for trees
++    or a single cut but keeps every detector on the same prep path), fits, evaluates, writes `out`.
++    Returns (test_accuracy, benign_fpr)."""
++    (Xtr, ytr), (Xva, yva), (Xte, yte) = splits
++    (Xtr_t, Xva_t, Xte_t), info = preprocess((Xtr, Xva, Xte))
++    feature = feature or default_feature(class_names)
++
++    start = time.perf_counter()
++    model = _fit(kind, Xtr_t, ytr, Xva_t, yva, cfg, class_names, feature)
++    train_time = time.perf_counter() - start
++
++    benign_idx = class_names.index("benign")
++    proba = model.predict_proba(Xte_t)
++    pred = np.argmax(proba, axis=1)
++    acc = float((pred == yte).mean())
++    benign = yte == benign_idx
++    fpr = float((pred[benign] != benign_idx).mean()) if benign.any() else 0.0
++
++    out = Path(out)
++    out.mkdir(parents=True, exist_ok=True)
++    model.save(out / MODEL_FILE[kind])
++    np.savez(out / "prep.npz", scaler_mean=info["scaler"].mean_, scaler_std=info["scaler"].std_)
++    np.savez(out / "history.npz")
++    np.savez(out / "test_predictions.npz", y_true=yte, y_proba=proba)
++    meta = {"model": kind, "input_mode": "native", "pca_components": None,
++            "param_count": model.param_count(), "train_time_seconds": train_time,
++            "test_accuracy": acc, "benign_fpr": fpr, "n_features": Xtr_t.shape[1],
++            "feature_names": FEATURE_NAMES, "class_names": class_names,
++            "config": cfg}
++    if kind == "threshold":
++        meta["threshold_feature"] = feature
++        meta["threshold_attack_below"] = bool(model.attack_below)
++    meta.update(extra_meta or {})
++    (out / "meta.json").write_text(json.dumps(meta, indent=2))
++    return acc, fpr
++
++
++def main():
++    p = argparse.ArgumentParser(description=__doc__)
++    p.add_argument("--kind", required=True, choices=list(KIND_TO_MODEL))
++    p.add_argument("--data", default="data/dataset.npz")
++    p.add_argument("--config", default="configs/baselines.yaml")
++    p.add_argument("--feature", default=None,
++                   help="threshold rule feature (default: cv_iat for C2, bytes_per_second for exfil)")
++    p.add_argument("--out", required=True)
++    args = p.parse_args()
++
++    cfg = yaml.safe_load(open(args.config))
++    X, y, _, class_names = load_dataset(args.data)
++    splits = train_val_test_split(X, y, val_size=cfg["val_size"], test_size=cfg["test_size"],
++                                  seed=cfg["seed"])
++    kind = KIND_TO_MODEL[args.kind]
++    acc, fpr = fit_baseline(kind, splits, cfg, class_names, args.out, feature=args.feature)
++    print(f"[{kind}] test accuracy {acc:.4f}  benign FPR {fpr:.4f}  -> {args.out}")
++
++
++if __name__ == "__main__":
++    main()

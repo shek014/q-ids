@@ -13,6 +13,14 @@ instead of one repeated configuration.
 
 Expensive: instances x grid live captures (no early stop). 20 instances x 15 jitters x ~65s is several
 hours — wrap in systemd-inhibit and leave it. Reduce --seeds-per-config or the grid for a faster pass.
+
+Axis escalation (size padding against the jitter-hardened detectors) is the same capture-once sweep on
+the other axis, restricted to the held-out instances so nothing overlaps adversarial training, then
+scored offline against EVERY hardened detector (evasion/score.py --heldout):
+
+    sudo .venv/bin/python -m evasion.sweep --intervals 2,4,8 --seeds-per-config 10 \
+         --axis size_jitter --fixed-jitter 0.5 --only-heldout \
+         --values 0,0.05,0.1,0.15,0.2,0.3,0.4,0.6 --out results/evasion/sweep_sizeaxis.npz
 """
 import argparse
 
@@ -33,27 +41,50 @@ def main():
                    help="check-in intervals (s) to diversify base configs over")
     p.add_argument("--seeds-per-config", type=int, default=5, help="RNG seeds per base config")
     p.add_argument("--payload-size", type=int, default=64, help="fixed check-in payload (bytes)")
-    p.add_argument("--size-jitter", type=float, default=0.0, help="fixed size jitter (jitter is swept)")
-    p.add_argument("--jitters", default=DEFAULT_JITTERS)
+    p.add_argument("--size-jitter", type=float, default=0.0,
+                   help="fixed size jitter when sweeping jitter")
+    p.add_argument("--jitters", default=DEFAULT_JITTERS, help="grid when --axis jitter")
+    p.add_argument("--axis", default="jitter", choices=["jitter", "size_jitter"],
+                   help="realizable knob to sweep (size_jitter = axis escalation)")
+    p.add_argument("--values", default=None, help="grid for --axis (defaults to --jitters)")
+    p.add_argument("--fixed-jitter", type=float, default=0.5,
+                   help="held timing jitter when sweeping size_jitter (an already-evading value)")
+    p.add_argument("--only-heldout", action="store_true",
+                   help="capture only the instances evasion.harden holds out (same --train-frac)")
+    p.add_argument("--train-frac", type=float, default=0.67, help="must match evasion.harden")
     p.add_argument("--window", type=float, default=60.0)
     p.add_argument("--max-interval", type=float, default=30.0)
     p.add_argument("--out", default="results/evasion/sweep.npz")
     p.add_argument("--work-dir", default="/tmp/evasion_work")
     args = p.parse_args()
 
-    grid = [float(x) for x in args.jitters.split(",")]
+    axis = args.axis
+    grid = [float(x) for x in (args.values or args.jitters).split(",")]
     intervals = [float(x) for x in args.intervals.split(",")]
-    base = {"size_jitter": args.size_jitter, "payload_size": args.payload_size}
+    if axis == "jitter":
+        base = {"size_jitter": args.size_jitter, "payload_size": args.payload_size}
+    else:
+        base = {"jitter": args.fixed_jitter, "payload_size": args.payload_size}
     configs = build_configs(base, interval=intervals)
     instances, labels = expand_instances(configs, args.seeds_per_config)
+    if args.only_heldout:
+        from evasion.harden import split_instances
+        _, keep = split_instances({"features": np.zeros((len(instances), 1, 1)),
+                                   "inst_config_idx": np.array(labels["inst_config_idx"]),
+                                   "inst_seed": np.array(labels["inst_seed"])}, args.train_frac)
+        instances = [instances[i] for i in keep]
+        labels = {"config_table": labels["config_table"],
+                  "inst_config_idx": [labels["inst_config_idx"][i] for i in keep],
+                  "inst_seed": [labels["inst_seed"][i] for i in keep]}
+        print(f"--only-heldout: capturing {len(instances)} held-out instances")
 
     n_i, n_j, n_f = len(instances), len(grid), len(FEATURE_NAMES)
     features = np.full((n_i, n_j, n_f), np.nan)
     functional = np.zeros((n_i, n_j), dtype=bool)
     got = np.zeros((n_i, n_j), dtype=bool)   # whether a flow was actually extracted
 
-    def one(cfg, jitter, seed):
-        theta = {**cfg, "jitter": jitter}
+    def one(cfg, value, seed):
+        theta = {**cfg, axis: value}
         return run_query(theta, window=args.window, max_interval=args.max_interval,
                          seed=seed, work_dir=args.work_dir)
 
@@ -72,7 +103,7 @@ def main():
             try:
                 r = one(cfg, j, seed)
             except Exception as e:  # noqa: BLE001 - keep the campaign alive through a flaky capture
-                print(f"  inst {ii} (cfg {ci} interval={cfg['interval']} seed={seed}) jitter {j}: FAILED ({e})")
+                print(f"  inst {ii} (cfg {ci} interval={cfg['interval']} seed={seed}) {axis} {j}: FAILED ({e})")
                 continue
             if r.features is not None:
                 features[ii, ji] = r.features
@@ -80,14 +111,16 @@ def main():
                 got[ii, ji] = True
             done += 1
             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} int={cfg['interval']:<4} seed={seed:2d}) "
-                  f"jitter {j:<4} {'flow' if got[ii, ji] else 'NOflow'} functional={functional[ii, ji]}")
+                  f"{axis} {j:<4} {'flow' if got[ii, ji] else 'NOflow'} functional={functional[ii, ji]}")
 
-    np.savez(args.out, features=features, functional=functional, got=got,
-             jitters=np.array(grid), feature_names=np.array(FEATURE_NAMES),
+    grid_key = {"jitters": np.array(grid)} if axis == "jitter" else {}
+    np.savez(args.out, features=features, functional=functional, got=got, **grid_key,
+             values=np.array(grid), axis=axis, fixed_jitter=args.fixed_jitter,
+             heldout_only=args.only_heldout, feature_names=np.array(FEATURE_NAMES),
              config_table=np.array(labels["config_table"]),
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
-             schema_version=2, window=args.window, max_interval=args.max_interval)
+             schema_version=3, window=args.window, max_interval=args.max_interval)
     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
           f"{len(configs)} configs) -> {args.out}")
 

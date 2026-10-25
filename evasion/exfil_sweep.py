@@ -55,6 +55,11 @@ def main():
     features = np.full((n_i, n_t, n_f), np.nan)
     functional = np.zeros((n_i, n_t), dtype=bool)
     got = np.zeros((n_i, n_t), dtype=bool)   # whether a flow was actually extracted
+    # completion time (s from window start; nan = never completed) and receiver-side confirmation
+    # (1 yes, 0 no, -1 no sink log). Stored so evasion/frontier.py can re-judge functionality for ANY
+    # deadline <= --deadline offline: a transfer that completes by D has the same flow either way.
+    completion_time = np.full((n_i, n_t), np.nan)
+    confirmed = np.full((n_i, n_t), -1, dtype=np.int8)
 
     def one(cfg, throttle, seed):
         theta = {**cfg, "throttle": throttle}
@@ -81,6 +86,11 @@ def main():
                 features[ii, ti] = r.features
                 functional[ii, ti] = r.functionality.functional
                 got[ii, ti] = True
+            f = r.functionality
+            if f.completion_time is not None:
+                completion_time[ii, ti] = f.completion_time
+            if f.delivery_confirmed is not None:
+                confirmed[ii, ti] = int(f.delivery_confirmed)
             done += 1
             er = effective_rate({"rate": cfg["rate"], "throttle": t})
             print(f"  [{done:3d}/{total}] inst {ii:2d} (cfg {ci} vol={cfg['volume']} seed={seed:2d}) "
@@ -88,11 +98,13 @@ def main():
                   f"functional={functional[ii, ti]}")
 
     np.savez(args.out, features=features, functional=functional, got=got,
+             completion_time=completion_time, delivery_confirmed=confirmed,
+             volumes=np.array([cfg["volume"] for _, cfg, _ in instances]),
              throttles=np.array(grid), feature_names=np.array(FEATURE_NAMES),
              config_table=np.array(labels["config_table"]),
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
-             schema_version=2, rate=args.rate, deadline=args.deadline, window=args.window)
+             schema_version=3, rate=args.rate, deadline=args.deadline, window=args.window)
     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
           f"{len(configs)} configs) -> {args.out}")
 

@@ -18,7 +18,7 @@ import numpy as np
 import yaml
 
 from features.dataset import load_dataset, train_val_test_split
-from evasion.harden import adversarial_flows, split_instances, train_mlp, train_vqc
+from evasion.harden import adversarial_flows, split_instances, train_baselines, train_mlp, train_vqc
 
 
 def main():
@@ -29,6 +29,8 @@ def main():
                    help="fraction of instances per config folded into adversarial training (rest held out)")
     p.add_argument("--mlp-config", default="configs/mlp.yaml")
     p.add_argument("--vqc-config", default="configs/vqc.yaml")
+    p.add_argument("--baselines-config", default="configs/baselines.yaml")
+    p.add_argument("--no-baselines", action="store_true", help="skip retraining RF / XGBoost / threshold")
     args = p.parse_args()
 
     mlp_cfg = yaml.safe_load(open(args.mlp_config))
@@ -56,6 +58,7 @@ def main():
          train_mlp(aug, vqc_cfg["n_qubits"], mlp_cfg, class_names, Path("results/exfil_classical_matched_hardened"))),
         ("exfil_quantum_hardened",
          train_vqc(aug, vqc_cfg, class_names, Path("results/exfil_quantum_hardened"))),
+        *train_baselines(aug, args, class_names, prefix="exfil_"),
     ]:
         print(f"  {name:34s} acc={acc:.4f}  benign_FPR={fpr:.4f}")
 

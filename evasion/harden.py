@@ -122,6 +122,22 @@ def train_vqc(splits, cfg, class_names, out):
     return acc, fpr
 
 
+def train_baselines(aug, args, class_names, prefix):
+    """Retrain RF / XGBoost / threshold on the augmented set into results/<prefix><kind>_hardened.
+    Yields (name, (acc, fpr)). Skipped with --no-baselines."""
+    if args.no_baselines:
+        return []
+    from models.baselines.train import fit_baseline
+    bcfg = yaml.safe_load(open(args.baselines_config))
+    out = []
+    for kind, short in [("random_forest", "rf"), ("xgboost", "xgb"), ("threshold", "threshold")]:
+        name = f"{prefix}{short}_hardened"
+        res = fit_baseline(kind, aug, bcfg, class_names, Path(f"results/{name}"),
+                           extra_meta={"adversarially_trained": True})
+        out.append((name, res))
+    return out
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--sweep", default="results/evasion/sweep.npz")
@@ -130,6 +146,8 @@ def main():
                    help="fraction of instances per config folded into adversarial training (rest held out)")
     p.add_argument("--mlp-config", default="configs/mlp.yaml")
     p.add_argument("--vqc-config", default="configs/vqc.yaml")
+    p.add_argument("--baselines-config", default="configs/baselines.yaml")
+    p.add_argument("--no-baselines", action="store_true", help="skip retraining RF / XGBoost / threshold")
     args = p.parse_args()
 
     mlp_cfg = yaml.safe_load(open(args.mlp_config))
@@ -154,6 +172,7 @@ def main():
         ("classical_native_hardened", train_mlp(aug, None, mlp_cfg, class_names, Path("results/classical_native_hardened"))),
         ("classical_matched_hardened", train_mlp(aug, vqc_cfg["n_qubits"], mlp_cfg, class_names, Path("results/classical_matched_hardened"))),
         ("quantum_hardened", train_vqc(aug, vqc_cfg, class_names, Path("results/quantum_hardened"))),
+        *train_baselines(aug, args, class_names, prefix=""),
     ]:
         print(f"  {name:28s} acc={acc:.4f}  benign_FPR={fpr:.4f}")
 

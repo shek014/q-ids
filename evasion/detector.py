@@ -35,6 +35,12 @@ class Detector:
         elif meta["model"] == "quantum_vqc":
             from models.quantum.vqc import VQC   # lazy: only pull in pennylane for a VQC detector
             model = VQC.load(str(result_dir / "model.npz"))
+        elif meta["model"] in ("random_forest", "xgboost"):
+            from models.baselines.models import TreeModel
+            model = TreeModel.load(result_dir / "model.pkl")
+        elif meta["model"] == "threshold":
+            from models.baselines.models import ThresholdDetector
+            model = ThresholdDetector.load(result_dir / "model.json")
         else:
             raise NotImplementedError(f"detector for model '{meta['model']}' not supported")
 
@@ -87,6 +93,15 @@ class Detector:
     def prob_benign(self, raw):
         """raw: (17,) or (n, 17). Returns P(benign) as a length-n array."""
         return self.model.predict_proba(self.transform(raw))[:, self.benign_idx]
+
+    def prob_benign_grid(self, features, got):
+        """Score a whole sweep at once. features: (n_inst, n_grid, 17), got: (n_inst, n_grid) bool.
+        Returns P(benign) with nan where no flow was captured — one batched call instead of one model
+        call per flow (matters for the VQC)."""
+        out = np.full(got.shape, np.nan)
+        if got.any():
+            out[got] = self.prob_benign(features[got])
+        return out
 
     def calls_benign(self, raw, threshold=0.5):
         return bool(self.prob_benign(raw)[0] >= threshold)
