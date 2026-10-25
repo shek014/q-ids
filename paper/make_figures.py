@@ -109,7 +109,7 @@ def fig_arms_race():
     """Fig 2: evasion rate across the defense arms race (vs the classical MLP)."""
     labels = ["Timing jitter\nvs. original", "Timing jitter\nvs. hardened",
               "Size padding\nvs. hardened"]
-    rates = [100, 0, 100]
+    rates = [100, 33, 100]
     colors = [BLUE, GREY, BLUE]
 
     fig, ax = plt.subplots(figsize=(3.6, 2.7))
