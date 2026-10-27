@@ -27,15 +27,18 @@
 \title{Problem-Space Evasion of Classical and Quantum Flow-Level Intrusion Detectors:
 Command-and-Control Beaconing and Data Exfiltration}
 
-%% \todo{confirm final title with co-author}
 
-\author[inst1]{Abhishek Ravicharan}
-\ead{abhishekravicharan@gmail.com}
+\author{Abhishek Ravicharan\corref{cor1}}
+\ead{abhishekravicharan@proton.me}
 
-\author[inst1]{Co-author Name (to confirm)}
+\author{Dayana R}
+\ead{dayanar1@srmist.edu.in}
 
-\affiliation[inst1]{organization={Affiliation (to confirm)},
-            country={Country}}
+\affiliation{organization={Department of Computer Science and Engineering,
+             SRM Institute of Science and Technology, Vadapalani Campus},
+             city={Chennai}, country={India}}
+
+\cortext[cor1]{Corresponding author.}
 
 \begin{abstract}
 Adversarial evasion of machine-learning network intrusion detectors is mostly demonstrated in
@@ -266,7 +269,7 @@ realizable traffic offers several such functionally-free axes, single-axis adver
 We evaluate the robustness of flow-level machine-learning intrusion detectors to \emph{realizable}
 (problem-space) adversarial evasion, and compare a classical neural network against a
 quantum-classical classifier under identical conditions. All code and captured data are released for
-reproducibility~\todo{repo/Zenodo DOI}.
+reproducibility (Section~Data availability).
 
 \subsection{Threat model}
 \label{sec:threat}
@@ -1150,7 +1153,8 @@ flow-level detectors durable robustness.
 \section*{CRediT authorship contribution statement}
 \textbf{Abhishek Ravicharan:} Conceptualization, Methodology, Software, Investigation,
 Data curation, Visualization, Writing -- original draft.
-\textbf{\todo{Co-author}:} Supervision, Writing -- review \& editing\todo{confirm roles}.
+
+\textbf{{Dayana R}:} Supervision, Writing -- review \& editing.
 
 \section*{Declaration of competing interest}
 The authors declare that they have no known competing financial interests or personal relationships
@@ -1167,7 +1171,9 @@ were involved, and all attack traffic was confined to the virtual topology.
 
 \section*{Data availability}
 The source code and captured datasets required to reproduce all results are publicly available.
-\todo{Add repository URL and archived Zenodo DOI.}
+The code is maintained at \url{https://github.com/shek014/q-ids}, and the version used for this
+paper, together with the captured datasets, is archived on Zenodo at
+\url{https://zenodo.org/records/23180178}.
 
 \bibliographystyle{elsarticle-num}
 \bibliography{references}
