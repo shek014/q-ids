@@ -24,8 +24,8 @@
 
 \begin{frontmatter}
 
-\title{Problem-Space Adversarial Robustness of Classical and Quantum
-Machine-Learning Intrusion Detectors: A C2-Beacon Evasion Study}
+\title{Problem-Space Evasion of Classical and Quantum Flow-Level Intrusion Detectors:
+Command-and-Control Beaconing and Data Exfiltration}
 
 %% \todo{confirm final title with co-author}
 
@@ -38,21 +38,29 @@ Machine-Learning Intrusion Detectors: A C2-Beacon Evasion Study}
             country={Country}}
 
 \begin{abstract}
-\todo{Write last, with the co-author.} Provisional one-paragraph stub:
-We study the robustness of flow-level machine-learning network intrusion detectors to
-\emph{realizable} (problem-space) adversarial evasion, using command-and-control (C2) beaconing as an
-attack whose detectable signal---timing and size regularity---is exactly a set of parameters the
-attacker controls for free. Driving a model-in-the-loop evasion that generates real traffic in an
-emulated network and admits only functionality-preserving perturbations, we find that both a classical
-neural network and a quantum-classical variational classifier are evaded for 100\% of beacon instances
-at a trivial level of timing jitter; that the quantum model offers \emph{no} robustness advantage once
-the detection task is made realistic; and that single-axis adversarial training relocates the
-vulnerability to a second, equally-free axis rather than closing it.
+Adversarial evasion of machine-learning network intrusion detectors is mostly demonstrated in
+\emph{feature space}, by perturbing flow feature vectors that may correspond to no traffic an attacker
+could send. We instead measure \emph{problem-space} evasion: every candidate perturbation is generated
+as real traffic in an emulated network, re-featurized, and admitted only if a functional oracle confirms
+the attack still works. We study two attack families whose detectable signal is a parameter the attacker
+sets---command-and-control (C2) beaconing (timing regularity) and data exfiltration (throughput)---and
+six detectors: a from-scratch neural network, an 8-qubit variational quantum classifier trained on
+matched inputs, Random Forest, XGBoost, and a single-feature rule. Every detector is evaded for
+essentially every attack instance it detected: C2 beacons by randomizing check-in timing by about
+$\pm$20--30\%, exfiltration by slowing the transfer two- to threefold, from about 3\,s to 6\,s against a
+60\,s deadline. The quantum classifier shows no consistent robustness advantage. Adversarial training
+closes the axis it is trained on, but only for the configuration it was shown: payload-size padding
+re-breaks every hardened C2 detector, and changing one further transfer parameter (volume, chunk timing
+or chunk size) restores exfiltration evasion against hardened detectors that had resisted throttling. A
+check against a public capture shows that real benign flows also occupy the beacon timing region,
+though less densely than our synthetic mix. Flow-level detectors that rely on attacker-controlled
+traffic shape are fragile under realizable evasion, and single-axis hardening does not repair them.
 \end{abstract}
 
 \begin{keyword}
 network intrusion detection \sep adversarial machine learning \sep problem-space attacks \sep
-command-and-control beaconing \sep quantum machine learning \sep adversarial robustness
+command-and-control beaconing \sep data exfiltration \sep quantum machine learning \sep
+adversarial training
 \end{keyword}
 
 \end{frontmatter}
@@ -64,26 +72,95 @@ command-and-control beaconing \sep quantum machine learning \sep adversarial rob
 % =====================================================================
 \section*{Highlights}
 \begin{itemize}
-  \item Realizable, functionality-preserving evasion of flow-level ML intrusion detectors
-  \item C2 beacons evade classical and quantum detectors 100\% at trivial timing jitter
-  \item The quantum VQC offers no robustness advantage once the task is realistic
-  \item Single-axis adversarial training relocates the flaw to the next free axis
+  \item Evasion of six flow-level detectors using real, functionality-checked traffic
+  \item Cheap timing or rate changes evade classical, tree, rule and quantum detectors
+  \item A quantum classifier shows no consistent robustness advantage on matched inputs
+  \item Adversarial training defends only the attack configuration it was trained on
+  \item Real traffic confirms that benign flows also occupy the beacon timing region
 \end{itemize}
 
 % =====================================================================
 \section{Introduction}
 \label{sec:intro}
 
-\todo{Draft with co-author. Hold until framing (how hard to lead with the quantum angle vs.\ the
-problem-space angle) is settled.} Planned contributions:
+Machine-learning network intrusion detection systems (NIDS) are a mature research topic, and so is
+their vulnerability to adversarial evasion~\cite{nids_survey2023,ennaji2024,nids_understanding2026}.
+Most of that vulnerability, however, has been shown in \emph{feature space}: the attacker perturbs a
+flow's feature vector directly, often with gradient access, and success is measured on the perturbed
+vector. A perturbed feature vector is not traffic. It may correspond to no sequence of packets an
+attacker could send, or to traffic that no longer performs the attack. This gap has drawn sustained
+criticism: Apruzzese et al.~\cite{apruzzese2022} argue for threat models with realistic attacker
+knowledge and control, and elShehaby and Matrawy~\cite{elshehaby2023} contend that evasion against real
+ML-NIDS remains largely impractical. Whether an attacker can evade a trained detector with traffic it
+can actually send, and at what cost, remains an open practical question.
+
+The \emph{problem-space} setting of Pierazzi et al.~\cite{pierazzi2020} makes the question precise: the
+attacker must produce a real object, and perturbations are limited to transformations that are
+realizable and preserve the object's function. For network traffic this is hard to evaluate. The map
+from packets to flow features is neither invertible nor differentiable, and static benchmark datasets
+cannot be regenerated with different attacker parameters. Evaluating problem-space evasion needs a
+traffic generator in the loop: each candidate perturbation must be sent, captured and re-featurized
+before the detector sees it, and its effect on the attack itself must be checked.
+
+We evaluate this setting on two attack families chosen because their detectable signal is set by the
+attacker. A command-and-control (C2) beacon checks in with its server at a regular interval, and
+flow-level beacon detectors key on exactly that regularity~\cite{yilmaz2026,gardiner2014}; but within the
+latency an operator tolerates, randomizing the interval or padding the payload costs the beacon nothing.
+Data exfiltration is a deliberate contrast: its signal is throughput, and slowing the transfer to evade
+a rate-based detector has a real cost, because the data must still leave before a deadline. In both
+cases, benign networks contain traffic with the same shape---periodic NTP and health checks, bulk
+backups and downloads---which bounds how strictly a detector can treat that shape as malicious.
+
+A second question concerns the detector. A growing literature applies variational and other
+quantum-classical classifiers to intrusion detection and reports clean accuracy competitive with
+classical baselines~\cite{abreu2024,thomos2026,qvcnn2024}, while a separate line asks whether quantum
+classifiers are inherently more robust to adversarial perturbation~\cite{west2023nature,west2023bench}.
+Both evaluate on static features or with $L_p$-bounded feature-space perturbations, so neither says
+whether a quantum detector is harder to evade with real traffic. We therefore train a classical
+multilayer perceptron (MLP) and a variational quantum classifier (VQC) on identical reduced inputs, and
+place both against the detectors a defender would actually deploy: Random Forest, XGBoost, and a
+single-feature statistical rule.
+
+All traffic in our evaluation is generated in an emulated Mininet network. A model-in-the-loop sweep
+sends real attacks with candidate parameters, extracts their flow features, and scores them against
+every detector offline; a functional oracle admits a perturbation only if the beacon keeps completing
+check-ins within a 30\,s latency budget, or the exfiltrated payload is confirmed delivered at the
+collector within a 60\,s deadline. We then harden every detector by adversarial training, evaluate it
+on held-out attack instances, and test whether the attacker can recover by changing a parameter the
+hardening did not cover.
+
+The results are uniformly unfavourable to the defender. Every detector is evaded for essentially every
+attack instance it detected, at a cost of about $\pm$20--30\% check-in jitter for C2 and a two- to
+threefold slowdown for exfiltration---a few seconds against a 60\,s deadline. The tree ensembles are
+no harder to evade than the MLP, and the quantum classifier shows no consistent robustness advantage.
+Adversarial training closes the axis it is trained on, but for the trained configuration only:
+payload-size padding re-breaks every hardened C2 detector, and hardened tree ensembles that resisted
+exfiltration throttling are evaded again as soon as the attacker also changes the transfer volume,
+chunk timing or chunk size.
+
+Our contributions are:
 \begin{itemize}
-  \item A model-in-the-loop, functionality-preserving problem-space evasion for flow-level NIDS,
-        realized as actual traffic rather than feature-vector perturbation.
-  \item The first problem-space robustness comparison of a quantum vs.\ classical detector on a
-        security task, finding no quantum advantage.
-  \item A concrete demonstration that single-axis adversarial training relocates rather than closes
-        the vulnerability (timing~$\rightarrow$~size axis escalation).
+  \item A model-in-the-loop, functionality-preserving problem-space evaluation of flow-level NIDS for
+        two attack families, in which every perturbation is realized as real traffic and checked by a
+        functional oracle, with evasion counted only against attacks the detector originally caught.
+  \item A comparison of six detectors---a from-scratch MLP, a VQC on matched inputs, Random Forest,
+        XGBoost and a single-feature rule---showing that all are evaded at low realizable cost and that,
+        to our knowledge in the first problem-space comparison of this kind, the quantum classifier
+        offers no consistent robustness advantage.
+  \item Evidence, across both attack families, that adversarial training defends the attack
+        \emph{configuration} it was trained on rather than the attack: changing one further
+        attacker-controlled parameter restores evasion at close to the original cost.
+  \item A methodological finding that evasion queries must reproduce the network conditions of the
+        training captures: run in an uncontended topology, exfiltration queries were out of
+        distribution and produced spurious ``evasions''.
+  \item An open, reproducible testbed---traffic generators, functional oracles, detectors, sweeps and
+        captured data---and a check of the synthetic benign mix against a public real-traffic capture.
 \end{itemize}
+
+The rest of the paper is organized as follows. Section~\ref{sec:related} reviews related work,
+Section~\ref{sec:method} describes the threat model, testbed, detectors and evasion procedure,
+Section~\ref{sec:results} presents the results, Section~\ref{sec:discussion} discusses their implications
+and limitations, and Section~\ref{sec:conclusion} concludes.
 
 % =====================================================================
 \section{Related Work}
@@ -612,7 +689,7 @@ jitter (\ref{sec:jitter}); the paired classical-vs-quantum comparison and transf
 (\ref{sec:paired}); the adversarial-training defense with its axis escalation (\ref{sec:defense}); and
 the same analyses for data exfiltration (\ref{sec:exfil-results}). Unless stated otherwise, evasion
 rates are detected-only (Section~\ref{sec:evasion}) and written as evaded/detected.
-\todo{add Wilson 95\% intervals to every rate in Tables~\ref{tab:clean}--\ref{tab:exfil-escalation}.}
+Rates in the evasion tables carry Wilson 95\% confidence intervals; with $n\le 30$ they are wide, and we read only differences that survive them.
 
 \subsection{Clean detection performance}
 \label{sec:clean}
@@ -687,19 +764,19 @@ nothing.
 \caption{Timing-jitter evasion over 30 beacon instances (three check-in intervals $\times$ ten seeds).
 Naive detected: unmodified (jitter $0$) beacons the detector flags. Evaded: of those, the instances
 evaded while functional. The minimal evading jitter is the median bracket (largest non-evading,
-smallest evading grid value]; queries is the median number of grid points to evasion.}
+smallest evading grid value]; queries is the median number of grid points to evasion. Brackets: Wilson 95\% confidence interval.}
 \label{tab:jitter}
 \setlength{\tabcolsep}{4pt}\small
 \begin{tabular}{lcccc}
 \toprule
 Detector & Naive detected & Evaded & Min.\ evading jitter & Queries \\
 \midrule
-MLP (native)          & 30/30 & 30/30 & $(0.25,\,0.3]$    & 7 \\
-MLP (matched)         & 30/30 & 30/30 & $(0.25,\,0.3]$    & 7 \\
-VQC                   & 20/30 & 19/20 & $(0.25,\,0.3]$    & 7 \\
-Random Forest         & 20/30 & 20/20 & $(0.175,\,0.225]$ & 6 \\
-XGBoost               & 30/30 & 30/30 & $(0.2,\,0.25]$    & 6 \\
-\texttt{cv\_iat} rule & 30/30 & 30/30 & $(0.2,\,0.25]$    & 6 \\
+MLP (native)          & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(0.25,\,0.3]$    & 7 \\
+MLP (matched)         & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(0.25,\,0.3]$    & 7 \\
+VQC                   & 20/30 & 19/20\,{\scriptsize[0.76, 0.99]} & $(0.25,\,0.3]$    & 7 \\
+Random Forest         & 20/30 & 20/20\,{\scriptsize[0.84, 1.00]} & $(0.175,\,0.225]$ & 6 \\
+XGBoost               & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(0.2,\,0.25]$    & 6 \\
+\texttt{cv\_iat} rule & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(0.2,\,0.25]$    & 6 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -709,7 +786,7 @@ XGBoost               & 30/30 & 30/30 & $(0.2,\,0.25]$    & 6 \\
 \includegraphics[width=0.7\linewidth]{fig1_evasion_curve.pdf}
 \caption{Mean $P(\text{benign})$ assigned by each detector to the same swept beacon flows as timing
 jitter increases (shaded band: $\pm 1$ s.d.\ across 30 instances). Both detectors cross the decision
-threshold at low jitter. \todo{regenerate on the 30-instance sweep and re-check this caption.}}
+threshold at low jitter.}
 \label{fig:evasion}
 \end{figure}
 
@@ -743,14 +820,14 @@ one threshold may sit just short of the other, and one further grid step evades 
 \begin{table}[h]
 \centering
 \caption{Cross-model transferability of minimal-jitter evasions, counted on instances the target
-detector flagged unmodified.}
+detector flagged unmodified. Brackets: Wilson 95\% confidence interval.}
 \label{tab:transfer}
 \begin{tabular}{lc}
 \toprule
 Evasion tuned against $\rightarrow$ scored on & Transfer rate \\
 \midrule
-MLP (native) $\rightarrow$ VQC & 50\% (10/20) \\
-VQC $\rightarrow$ MLP (native) & 84\% (16/19) \\
+MLP (native) $\rightarrow$ VQC & 50\% (10/20\,{\scriptsize[0.30, 0.70]}) \\
+VQC $\rightarrow$ MLP (native) & 84\% (16/19\,{\scriptsize[0.62, 0.94]}) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -771,19 +848,19 @@ evades.
 \begin{table}[h]
 \centering
 \caption{Adversarial training on jittered beacons: clean performance before~$\rightarrow$~after, and
-held-out timing-jitter evasion (9 held-out instances; evaded/detected).}
+held-out timing-jitter evasion (9 held-out instances; evaded/detected). Brackets: Wilson 95\% confidence interval.}
 \label{tab:hardened}
 \setlength{\tabcolsep}{3pt}\footnotesize
 \begin{tabular}{lccc}
 \toprule
 Detector & Clean accuracy & Benign FPR & Held-out jitter evasion \\
 \midrule
-MLP (native)          & 0.852 $\rightarrow$ 0.841 & 0.163 $\rightarrow$ 0.178 & 9/9 $\rightarrow$ 0/9 \\
-MLP (matched)         & 0.857 $\rightarrow$ 0.847 & 0.185 $\rightarrow$ 0.156 & 9/9 $\rightarrow$ 0/9 \\
-VQC                   & 0.841 $\rightarrow$ 0.810 & 0.170 $\rightarrow$ 0.244 & 6/6 $\rightarrow$ 3/9 \\
-Random Forest         & 0.841 $\rightarrow$ 0.847 & 0.185 $\rightarrow$ 0.156 & 6/6 $\rightarrow$ 0/9 \\
-XGBoost               & 0.852 $\rightarrow$ 0.841 & 0.185 $\rightarrow$ 0.170 & 9/9 $\rightarrow$ 0/9 \\
-\texttt{cv\_iat} rule & 0.619 $\rightarrow$ 0.619 & 0.519 $\rightarrow$ 0.533 & 9/9 $\rightarrow$ 9/9 \\
+MLP (native)          & 0.852 $\rightarrow$ 0.841 & 0.163 $\rightarrow$ 0.178 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
+MLP (matched)         & 0.857 $\rightarrow$ 0.847 & 0.185 $\rightarrow$ 0.156 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
+VQC                   & 0.841 $\rightarrow$ 0.810 & 0.170 $\rightarrow$ 0.244 & 6/6\,{\scriptsize[0.61, 1.00]} $\rightarrow$ 3/9\,{\scriptsize[0.12, 0.65]} \\
+Random Forest         & 0.841 $\rightarrow$ 0.847 & 0.185 $\rightarrow$ 0.156 & 6/6\,{\scriptsize[0.61, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
+XGBoost               & 0.852 $\rightarrow$ 0.841 & 0.185 $\rightarrow$ 0.170 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
+\texttt{cv\_iat} rule & 0.619 $\rightarrow$ 0.619 & 0.519 $\rightarrow$ 0.533 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 9/9\,{\scriptsize[0.70, 1.00]} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -799,17 +876,17 @@ untouched axis defeats the hardened detector completely.
 \begin{table}[h]
 \centering
 \caption{Axis escalation: payload-size-jitter sweep against the hardened detectors (timing jitter held
-at $0.5$), on the 9 held-out instances.}
+at $0.5$), on the 9 held-out instances. Brackets: Wilson 95\% confidence interval.}
 \label{tab:sizeaxis}
 \begin{tabular}{lccc}
 \toprule
 Hardened detector & Evaded & Median min.\ size jitter & Median queries \\
 \midrule
-MLP (native)   & 9/9 & 0.10 & 3 \\
-MLP (matched)  & 9/9 & 0.10 & 3 \\
-VQC            & 6/6 & 0.30 & 6 \\
-Random Forest  & 9/9 & 0.15 & 4 \\
-XGBoost        & 9/9 & 0.05 & 2 \\
+MLP (native)   & 9/9\,{\scriptsize[0.70, 1.00]} & 0.10 & 3 \\
+MLP (matched)  & 9/9\,{\scriptsize[0.70, 1.00]} & 0.10 & 3 \\
+VQC            & 6/6\,{\scriptsize[0.61, 1.00]} & 0.30 & 6 \\
+Random Forest  & 9/9\,{\scriptsize[0.70, 1.00]} & 0.15 & 4 \\
+XGBoost        & 9/9\,{\scriptsize[0.70, 1.00]} & 0.05 & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -819,8 +896,7 @@ XGBoost        & 9/9 & 0.05 & 2 \\
 \includegraphics[width=0.7\linewidth]{fig2_arms_race.pdf}
 \caption{The defense arms race against the classical MLP: the timing-jitter attack evades the original
 detector (100\%), is defeated by adversarial training (0\% on the held-out set), and the hardened
-detector is then re-broken by escalation to the payload-size axis (100\%). \todo{regenerate on the new
-results.}}
+detector is then re-broken by escalation to the payload-size axis (100\%).}
 \label{fig:armsrace}
 \end{figure}
 
@@ -870,19 +946,19 @@ collector.
 \begin{table}[htbp]
 \centering
 \caption{Throttle evasion over 30 exfil instances (three volumes $\times$ ten seeds). Effective rate
-$r_0/(1+c)$; transfer time is the median completion time at the minimal evading throttle.}
+$r_0/(1+c)$; transfer time is the median completion time at the minimal evading throttle. Brackets: Wilson 95\% confidence interval.}
 \label{tab:exfil-evasion}
 \setlength{\tabcolsep}{4pt}\small
 \begin{tabular}{lcccc}
 \toprule
 Detector & Naive detected & Evaded & Min.\ evading throttle & Transfer time \\
 \midrule
-MLP (native)    & 30/30 & 30/30 & $(1.5,\,2.0]$   & 6.0\,s \\
-MLP (matched)   & 30/30 & 30/30 & $(1.5,\,2.0]$   & 5.9\,s \\
-VQC             & 21/30 & 21/21 & $(1.0,\,1.5]$   & 4.6\,s \\
-Random Forest   & 29/30 & 29/29 & $(1.0,\,1.5]$   & 5.8\,s \\
-XGBoost         & 27/30 & 27/27 & $(1.0,\,1.5]$   & 5.8\,s \\
-Throughput rule & 30/30 & 30/30 & $(1.25,\,1.75]$ & 5.8\,s \\
+MLP (native)    & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(1.5,\,2.0]$   & 6.0\,s \\
+MLP (matched)   & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(1.5,\,2.0]$   & 5.9\,s \\
+VQC             & 21/30 & 21/21\,{\scriptsize[0.85, 1.00]} & $(1.0,\,1.5]$   & 4.6\,s \\
+Random Forest   & 29/30 & 29/29\,{\scriptsize[0.88, 1.00]} & $(1.0,\,1.5]$   & 5.8\,s \\
+XGBoost         & 27/30 & 27/27\,{\scriptsize[0.88, 1.00]} & $(1.0,\,1.5]$   & 5.8\,s \\
+Throughput rule & 30/30 & 30/30\,{\scriptsize[0.89, 1.00]} & $(1.25,\,1.75]$ & 5.8\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -892,7 +968,7 @@ Throughput rule & 30/30 & 30/30 & $(1.25,\,1.75]$ & 5.8\,s \\
 \includegraphics[width=0.7\linewidth]{fig5_exfil_curve.pdf}
 \caption{Mean $P(\text{benign})$ assigned to the same swept exfil flows as the transfer is throttled
 (shaded band: $\pm 1$ s.d.). As throughput falls toward the benign low-rate band the detectors
-increasingly call the slowed exfil benign. \todo{regenerate on the full-topology sweep.}}
+increasingly call the slowed exfil benign.}
 \label{fig:exfil-curve}
 \end{figure}
 
@@ -913,19 +989,19 @@ slowest grid point (about 46\,KB/s, inside the benign trickle band).
 \begin{table}[htbp]
 \centering
 \caption{Adversarial training on throttled exfil: clean performance after hardening and held-out
-throttle evasion (9 held-out instances; evaded/detected) with the median transfer time at evasion.}
+throttle evasion (9 held-out instances; evaded/detected) with the median transfer time at evasion. Brackets: Wilson 95\% confidence interval.}
 \label{tab:exfil-hardened}
 \setlength{\tabcolsep}{3pt}\footnotesize
 \begin{tabular}{lcccc}
 \toprule
 Hardened detector & Accuracy & Benign FPR & Held-out evasion & Transfer time \\
 \midrule
-MLP (native)    & 0.880 & 0.154 & 9/9 $\rightarrow$ 8/9 & 7.7\,s \\
-MLP (matched)   & 0.880 & 0.154 & 9/9 $\rightarrow$ 9/9 & 17.2\,s \\
-VQC             & 0.833 & 0.142 & 6/6 $\rightarrow$ 8/8 & 4.8\,s \\
-Random Forest   & 0.880 & 0.123 & 8/8 $\rightarrow$ 0/8 & -- \\
-XGBoost         & 0.880 & 0.136 & 8/8 $\rightarrow$ 1/9 & -- \\
-Throughput rule & 0.801 & 0.265 & 9/9 $\rightarrow$ 9/9 & 17.3\,s \\
+MLP (native)    & 0.880 & 0.154 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 8/9\,{\scriptsize[0.57, 0.98]} & 7.7\,s \\
+MLP (matched)   & 0.880 & 0.154 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 9/9\,{\scriptsize[0.70, 1.00]} & 17.2\,s \\
+VQC             & 0.833 & 0.142 & 6/6\,{\scriptsize[0.61, 1.00]} $\rightarrow$ 8/8\,{\scriptsize[0.68, 1.00]} & 4.8\,s \\
+Random Forest   & 0.880 & 0.123 & 8/8\,{\scriptsize[0.68, 1.00]} $\rightarrow$ 0/8\,{\scriptsize[0.00, 0.32]} & -- \\
+XGBoost         & 0.880 & 0.136 & 8/8\,{\scriptsize[0.68, 1.00]} $\rightarrow$ 1/9\,{\scriptsize[0.02, 0.43]} & -- \\
+Throughput rule & 0.801 & 0.265 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 9/9\,{\scriptsize[0.70, 1.00]} & 17.3\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -948,19 +1024,19 @@ configuration it was shown; the attacker moves along one more free parameter and
 \begin{table}[htbp]
 \centering
 \caption{Escalation sweeps against the hardened exfil detectors (6 instances each, volumes unseen in
-hardening): evaded/detected and median transfer time at evasion.}
+hardening): evaded/detected and median transfer time at evasion. Brackets: Wilson 95\% confidence interval.}
 \label{tab:exfil-escalation}
 \setlength{\tabcolsep}{3pt}\footnotesize
 \begin{tabular}{lccc}
 \toprule
 Hardened detector & (a) New volumes & (b) + chunk jitter 0.3 & (c) + 8192-B chunks \\
 \midrule
-MLP (native)    & 6/6, 16.9\,s & 6/6, 17.0\,s & 6/6, 7.1\,s \\
-MLP (matched)   & 6/6, 16.9\,s & 6/6, 17.0\,s & 5/5, 7.5\,s \\
-VQC             & 5/5, 12.4\,s & 6/6, 11.3\,s & 5/5, 6.0\,s \\
-Random Forest   & 4/6, 16.9\,s & 6/6, 19.6\,s & 6/6, 7.1\,s \\
-XGBoost         & 6/6, 14.5\,s & 6/6, 11.4\,s & 6/6, 7.1\,s \\
-Throughput rule & 6/6, 16.9\,s & 6/6, 17.0\,s & 6/6, 16.9\,s \\
+MLP (native)    & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 17.0\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 7.1\,s \\
+MLP (matched)   & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 17.0\,s & 5/5\,{\scriptsize[0.57, 1.00]}, 7.5\,s \\
+VQC             & 5/5\,{\scriptsize[0.57, 1.00]}, 12.4\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 11.3\,s & 5/5\,{\scriptsize[0.57, 1.00]}, 6.0\,s \\
+Random Forest   & 4/6\,{\scriptsize[0.30, 0.90]}, 16.9\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 19.6\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 7.1\,s \\
+XGBoost         & 6/6\,{\scriptsize[0.61, 1.00]}, 14.5\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 11.4\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 7.1\,s \\
+Throughput rule & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 17.0\,s & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -975,20 +1051,102 @@ configuration it was trained on.
 % =====================================================================
 \section{Discussion}
 \label{sec:discussion}
-\todo{Draft with co-author.} Points to develop: what the result implies for deploying flow-level C2
-detectors; why the quantum model shows no robustness advantage once the task is realistic (expressivity
-vs.\ the problem-space constraint); limitations (emulated testbed with a synthetic benign mix about
-$3.4\times$ denser in the beacon band than the real reference host, Section~\ref{sec:testbed}; C2 queries in
-a two-host topology; small held-out sets; simulator-based VQC; window-dependent features); and what a robust defense would require (the joint multi-axis space,
-not single-axis hardening).
+
+\subsection{The weakness is in the features, not the model}
+Six detectors with very different inductive biases---a neural network, a quantum circuit, two tree
+ensembles and a one-line rule---fail in the same way, which points to what they share: the flow
+features. Each detector separates attack from benign largely through traffic shape that the attacker
+sets, timing regularity for C2 and throughput for exfiltration. The exfiltration results make this
+explicit: a single cut on \texttt{bytes\_per\_second} matches the learned detectors on clean traffic,
+so their decision effectively reduces to the one quantity throttling changes. C2 detection is genuinely
+multi-feature (the \texttt{cv\_iat} rule alone flags half of all benign flows), yet a single
+attacker-controlled axis still defeats it. A detection signal the attacker controls for free does not
+hold up against an attacker who knows it is used. The benign traffic that shares the attack's shape
+explains why a defender cannot simply tighten the threshold: our realism check finds about one real
+benign flow in eight as regular as a beacon, and pushing the decision boundary into that region cost
+false positives wherever hardening reached it (the VQC's rose from 0.17 to 0.24, the throughput rule's
+from 0.16 to 0.27). Flow-shape
+features remain useful against unsophisticated attacks, but against an adaptive attacker a defender
+needs signals that cannot be changed without breaking the attack or paying a real cost, such as
+destination reputation, behaviour aggregated over many windows, or host telemetry. We did not evaluate
+such signals here.
+
+\subsection{Why the quantum classifier offers no robustness advantage}
+On C2, with three times the data of our first runs, the VQC matched the classical detectors on clean
+accuracy (84.1\% against 84--86\%) and was neither consistently harder nor easier to evade on identical
+flows. On exfiltration it was the weaker detector and the easier target. Robustness claims for quantum
+classifiers concern small, $L_p$-bounded perturbations of the encoded input~\cite{west2023nature}; a
+problem-space attacker does not make small feature-space changes. A modest, free change in timing jitter
+produces a large change in \texttt{cv\_iat}, the feature that carries the detection signal, and no
+model class is robust to a large change in the feature its decision rests on. The VQC's earlier deficit
+on a one-third-size dataset is also a methodological caution: robustness comparisons between model
+families should be made where clean detection is neither saturated nor data-starved, or differences in
+evasion threshold may reflect the training regime rather than the architecture.
+
+\subsection{Adversarial training learns the configuration, not the attack}
+Hardening worked on the axis it targeted: held-out jitter evasion fell from 100\% to 0\% for the MLPs and
+tree ensembles. But a second free axis, payload-size padding, re-broke every hardened C2 detector in
+two to six queries. Exfiltration sharpened the point. After hardening on throttled exfiltration, Random
+Forest and XGBoost resisted throttling even at rates inside the benign trickle band, and their feature
+importances had shifted toward packet-size and volume features---exactly the parameters our sweep held
+fixed. Changing the transfer volume alone defeated the hardened XGBoost; adding chunk-timing jitter
+defeated both ensembles; and larger chunks returned every hardened learned detector to roughly its
+unhardened evasion cost. Adversarial training on samples from one attack configuration thus teaches a
+flexible model that configuration, and the attacker has more free parameters than the defender has
+trained on. An effective defense would have to cover the joint space of attacker-controllable
+parameters, and our results suggest the cost of doing so: every axis hardened pushes the boundary
+further into regular or high-rate benign traffic, so we expect joint hardening to compound the
+false-positive cost. Testing that is the most important open question this work raises.
+
+\subsection{A methodological lesson: queries must match training conditions}
+Our first exfiltration sweep ran evasion queries in a two-host network without background traffic. The
+resulting naive exfiltration flows were faster and more regular than any training exfiltration, and
+two detectors with test recall of 0.94 and above called most of them benign---an apparent evasion at zero
+cost that was entirely an artifact of the query conditions. Running queries inside the training
+scenario, with its background traffic, removed it. Problem-space evaluations generate their own test
+traffic, and that traffic must be in-distribution for the detector at the unperturbed point; otherwise
+the measured evasion conflates the attack with a train/test mismatch. Reporting the naive detection rate
+next to every evasion rate, as we do, makes such mismatches visible.
+
+\subsection{Limitations}
+\begin{itemize}
+  \item \emph{Emulated testbed and synthetic benign traffic.} All traffic is generated in Mininet. Our
+        benign mix is about $3.4\times$ denser in the beacon timing band than the real reference host
+        (Section~\ref{sec:testbed}), so absolute false-positive rates likely overstate those of a
+        deployment; the evasion results do not depend on this density.
+  \item \emph{C2 query topology.} C2 queries ran in a two-host topology. This makes query beacons more
+        regular, hence easier to detect, than training beacons, so the reported C2 evasion thresholds
+        are conservative; we did not rerun them in the full topology.
+  \item \emph{Small held-out sets.} Hardening is evaluated on 9 held-out instances per family and each
+        exfiltration escalation sweep on 6, so those rates carry wide confidence intervals; we report
+        them as a targeted test of the explanation rather than as precise rates.
+  \item \emph{Two attack families, binary tasks.} Attacks whose signal is bound to their function, such
+        as volumetric denial of service, may be harder to evade without losing effect.
+  \item \emph{Simulated, single-architecture VQC.} The VQC runs on a noiseless state-vector simulator
+        with one circuit design (8 qubits, 4 entangling layers); other encodings or hardware noise
+        could behave differently.
+  \item \emph{Weak attacker and fixed window.} The attacker is a black-box, one-axis grid search with no
+        model knowledge, so our results are a lower bound on what an adaptive attacker achieves.
+        Features are computed over a fixed 60\,s window; detectors aggregating behaviour over longer
+        horizons were not evaluated.
+\end{itemize}
 
 % =====================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-\todo{Draft with co-author.}
+We evaluated flow-level intrusion detectors against problem-space evasion, in which every perturbation
+is sent as real traffic and admitted only if the attack keeps working. Across C2 beaconing and data
+exfiltration, six detectors---classical, tree-based, rule-based and quantum---were evaded for
+essentially every attack instance they detected, at the cost of modest check-in jitter or a few seconds
+of extra transfer time. The quantum classifier offered no consistent robustness advantage on matched
+inputs. Adversarial training closed the axis it was trained on but defended only the trained
+configuration: one further attacker-controlled parameter restored evasion at close to the original
+cost. These results locate the weakness in flow features the attacker controls, not in the model class,
+and show that hardening one axis at a time does not repair it. Future work should test joint
+multi-axis adversarial training and its false-positive cost, extend the evaluation to attacks whose
+signal is bound to their function, and examine whether features an attacker cannot change cheaply give
+flow-level detectors durable robustness.
 
-% =====================================================================
-% REQUIRED DECLARATIONS (Computers & Security). Confirm wording with co-author.
 % =====================================================================
 \section*{CRediT authorship contribution statement}
 \textbf{Abhishek Ravicharan:} Conceptualization, Methodology, Software, Investigation,
