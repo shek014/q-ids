@@ -201,3 +201,8 @@ paper/tex/*.out
 paper/tex/*.spl
 paper/tex/*.synctex.gz
 paper/tex/main.pdf
+
+# local tooling
+.claude/
+*.patch
+results_60runs/
