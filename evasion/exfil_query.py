@@ -36,7 +36,7 @@ def effective_rate(theta):
     return float(theta["rate"]) / (1.0 + float(theta.get("throttle", 0.0)))
 
 
-def run_query(theta, window=65.0, seed=0, work_dir=None):
+def run_query(theta, window=65.0, seed=0, work_dir=None, topology="full"):
     """theta: {volume, rate (naive base), throttle, chunk_size?, jitter?, deadline?}. Returns a
     QueryResult whose .functionality is an exfil_oracle.ExfilFunctionality (also has .functional, so
     the generic line_search treats it exactly like the C2 one)."""
@@ -53,12 +53,17 @@ def run_query(theta, window=65.0, seed=0, work_dir=None):
         "--window", str(window),
         "--seed", str(seed),
         "--out-dir", str(work),
+        "--topology", topology,
     ]
     subprocess.run(cmd, check=True)  # inherits root from the driver; builds+captures the topology
 
     meta = json.loads((work / "meta.json").read_text())
-    X, _ = extract_pcap(work / "query.pcap", mac_labels={meta["exfil_mac"]: "exfil"},
-                        exclude_macs=[meta["capture_mac"]], class_names=["benign", "exfil"])
+    # keep ONLY the controlled exfil's flow: the capture host and every background host are excluded
+    # (unlisted MACs would otherwise default to "benign" rows)
+    X, y = extract_pcap(work / "query.pcap", mac_labels={meta["exfil_mac"]: "exfil"},
+                        exclude_macs=[meta["capture_mac"], *meta.get("background_macs", [])],
+                        class_names=["benign", "exfil"])
+    X = X[y == 1] if len(X) else X
     features = X[0] if len(X) else None
     recv_path = work / "received.log"
     # pass None when the sink log was never wired (old captures) so the oracle falls back to client-side;

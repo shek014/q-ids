@@ -75,6 +75,9 @@ def main():
     p.add_argument("--window", type=float, default=65.0)
     p.add_argument("--out", default="results/evasion/exfil_sweep.npz")
     p.add_argument("--work-dir", default="/tmp/exfil_evasion_work")
+    p.add_argument("--topology", default="full", choices=["full", "minimal"],
+                   help="full = training scenario network with background traffic (in-distribution); "
+                        "minimal = old 2-host topology")
     args = p.parse_args()
 
     grid = [float(x) for x in args.throttles.split(",")]
@@ -96,7 +99,8 @@ def main():
 
     def one(cfg, throttle, seed):
         theta = {**cfg, "throttle": throttle}
-        return run_query(theta, window=args.window, seed=seed, work_dir=args.work_dir)
+        return run_query(theta, window=args.window, seed=seed, work_dir=args.work_dir,
+                         topology=args.topology)
 
     # checkpoint/resume: progress is saved after every instance to <out>.partial.npz; rerunning the
     # same command after a crash or power cut skips finished instances instead of starting over.
@@ -155,7 +159,7 @@ def main():
              config_table=np.array(labels["config_table"]),
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
-             schema_version=3, rate=args.rate, deadline=args.deadline, window=args.window)
+             topology=args.topology, schema_version=3, rate=args.rate, deadline=args.deadline, window=args.window)
     import os
     os.remove(_ckpt_path(args.out))   # final file written; checkpoint no longer needed
     print(f"\nsaved sweep ({int(got.sum())}/{total} flows captured, {n_i} instances over "
