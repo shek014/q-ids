@@ -250,6 +250,30 @@ saturated (Section~\ref{sec:results}). The beacons and periodic benign traffic (
 \emph{same} generator differing only in the jitter/size regime; the role (hence label) is assigned per
 host. The contested boundary is therefore near-boundary by construction (Table~\ref{tab:scenario}).
 
+\paragraph{Realism check.} To test whether real benign traffic shows the timing regularity our
+confuser assumes, we ran a public capture of a normal host~\cite{ctunormal29} through the same pipeline:
+the host's outbound packets over two hours, cut into 60\,s windows to match the scenario window
+(7{,}456 flows with at least five packets). Real benign flows do occupy the beacon region: 12.3\% are
+as regular as our C2 beacons ($\texttt{cv\_iat} \le 0.111$, the 95th percentile of the C2 class;
+Fig.~\ref{fig:realism}). Our synthetic benign mix is, however, about $3.4\times$ denser there (41.9\%),
+so it is a deliberately hard setting: the clean false-positive rates we report likely overstate those of
+a deployment on traffic like this host's. Two qualifications apply. The reference host only browses the
+web, with no NTP, health checks or monitoring agents, so an enterprise segment plausibly contains
+\emph{more} regular benign traffic than it does; and part of the real low-\texttt{cv\_iat} mass comes from
+evenly paced bulk transfers rather than periodic check-ins---which a timing-regularity feature cannot
+tell apart either. The evasion results do not depend on this density: evasion moves the beacon into the
+benign region however densely it is populated.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.62\linewidth]{fig6_realism.pdf}
+\caption{Timing regularity (\texttt{cv\_iat}, log scale) of real benign flows from a public normal-host
+capture, against our synthetic benign and C2 flows (flows with $\ge 5$ packets, 60\,s windows). Dashed
+line: the C2 95th percentile. 12.3\% of real benign flows fall left of it, against 41.9\% of synthetic
+benign flows.}
+\label{fig:realism}
+\end{figure}
+
 \begin{table}[htbp]
 \centering
 \caption{Traffic generators in the C2 scenario (each run lasts 60\,s; host h1 is the victim/collector
@@ -953,8 +977,9 @@ configuration it was trained on.
 \label{sec:discussion}
 \todo{Draft with co-author.} Points to develop: what the result implies for deploying flow-level C2
 detectors; why the quantum model shows no robustness advantage once the task is realistic (expressivity
-vs.\ the problem-space constraint); limitations (single attack family, emulated testbed, simulator-based
-VQC, window-dependent features); and what a robust defense would require (the joint multi-axis space,
+vs.\ the problem-space constraint); limitations (emulated testbed with a synthetic benign mix about
+$3.4\times$ denser in the beacon band than the real reference host, Section~\ref{sec:testbed}; C2 queries in
+a two-host topology; small held-out sets; simulator-based VQC; window-dependent features); and what a robust defense would require (the joint multi-axis space,
 not single-axis hardening).
 
 % =====================================================================
