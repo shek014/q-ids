@@ -2,8 +2,8 @@
   "model": "quantum_vqc",
   "input_mode": "matched",
   "pca_components": 8,
-  "test_accuracy": 0.7936507936507936,
-  "benign_fpr": 0.28888888888888886,
+  "test_accuracy": 0.8095238095238095,
+  "benign_fpr": 0.24444444444444444,
   "n_features": 8,
   "feature_names": [
     "duration",

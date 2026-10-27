@@ -1,0 +1,55 @@
+{
+  "model": "random_forest",
+  "input_mode": "native",
+  "pca_components": null,
+  "param_count": 46886,
+  "train_time_seconds": 0.4011622719990555,
+  "test_accuracy": 0.8465608465608465,
+  "benign_fpr": 0.15555555555555556,
+  "n_features": 17,
+  "feature_names": [
+    "duration",
+    "packet_count",
+    "byte_count",
+    "mean_packet_size",
+    "std_packet_size",
+    "packets_per_second",
+    "bytes_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "mean_iat",
+    "std_iat",
+    "cv_iat",
+    "unique_dst_ports",
+    "unique_src_ports",
+    "protocol"
+  ],
+  "class_names": [
+    "benign",
+    "c2"
+  ],
+  "config": {
+    "seed": 0,
+    "val_size": 0.15,
+    "test_size": 0.15,
+    "rf": {
+      "n_estimators": 300,
+      "max_depth": null,
+      "min_samples_leaf": 2
+    },
+    "xgb": {
+      "n_estimators": 400,
+      "max_depth": 4,
+      "learning_rate": 0.05,
+      "subsample": 0.9,
+      "colsample_bytree": 0.9,
+      "early_stopping_rounds": 30
+    },
+    "threshold": {
+      "sharpness": 4.0
+    }
+  },
+  "adversarially_trained": true
+}

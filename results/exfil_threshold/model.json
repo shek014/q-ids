@@ -1,0 +1,9 @@
+{
+  "feature_idx": 6,
+  "feature_name": "bytes_per_second",
+  "sharpness": 4.0,
+  "attack_idx": 1,
+  "n_classes": 2,
+  "threshold": 0.3179108239048144,
+  "attack_below": false
+}

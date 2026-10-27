@@ -1,0 +1,9 @@
+{
+  "feature_idx": 13,
+  "feature_name": "cv_iat",
+  "sharpness": 4.0,
+  "attack_idx": 1,
+  "n_classes": 2,
+  "threshold": -0.30538396323543804,
+  "attack_below": true
+}

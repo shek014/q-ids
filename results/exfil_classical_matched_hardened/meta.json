@@ -2,8 +2,8 @@
   "model": "classical_mlp",
   "input_mode": "matched",
   "pca_components": 8,
-  "test_accuracy": 0.8611111111111112,
-  "benign_fpr": 0.18518518518518517,
+  "test_accuracy": 0.8796296296296297,
+  "benign_fpr": 0.15432098765432098,
   "n_features": 8,
   "feature_names": [
     "duration",

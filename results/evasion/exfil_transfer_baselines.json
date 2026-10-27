@@ -1,0 +1,218 @@
+{
+  "native_mlp": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 1.5,
+    "mean_min_throttle": 1.4833333333333334,
+    "median_bracket": [
+      1.0,
+      1.5
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.0,
+        "median_bracket": [
+          0.5,
+          1.0
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.75,
+        "median_bracket": [
+          1.25,
+          1.75
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.0,
+        "median_bracket": [
+          1.5,
+          2.0
+        ]
+      }
+    ]
+  },
+  "matched_mlp": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 1.5,
+    "mean_min_throttle": 1.3333333333333333,
+    "median_bracket": [
+      1.0,
+      1.5
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 0.75,
+        "median_bracket": [
+          0.25,
+          0.75
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.75,
+        "median_bracket": [
+          1.25,
+          1.75
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.0,
+        "median_bracket": [
+          1.5,
+          2.0
+        ]
+      }
+    ]
+  },
+  "quantum": {
+    "evasion_rate": 1.0,
+    "median_min_throttle": 1.75,
+    "mean_min_throttle": 1.6,
+    "median_bracket": [
+      1.25,
+      1.75
+    ],
+    "per_config": [
+      {
+        "label": "volume=800000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 800000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.5,
+        "median_bracket": [
+          1.0,
+          1.5
+        ]
+      },
+      {
+        "label": "volume=1150000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1150000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 2.0,
+        "median_bracket": [
+          1.5,
+          2.0
+        ]
+      },
+      {
+        "label": "volume=1500000",
+        "config": {
+          "chunk_size": 4096,
+          "deadline": 60.0,
+          "jitter": 0.1,
+          "rate": 600000.0,
+          "volume": 1500000
+        },
+        "n": 10,
+        "evasion_rate": 1.0,
+        "median_min_throttle": 1.5,
+        "median_bracket": [
+          1.0,
+          1.5
+        ]
+      }
+    ]
+  },
+  "paired": {
+    "comparison": "matched_mlp_vs_vqc",
+    "n_paired": 30,
+    "mean_throttle_diff_vqc_minus_mlp": 0.26666666666666666,
+    "vqc_harder": 11,
+    "mlp_harder": 6,
+    "tie_at_grid_resolution": 13
+  },
+  "transfer_mlp_evasion_to_vqc": {
+    "transfer_rate": 0.7,
+    "n": 30
+  },
+  "transfer_vqc_evasion_to_mlp": {
+    "transfer_rate": 0.7666666666666667,
+    "n": 30
+  },
+  "threshold": 0.5,
+  "throttles": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    5.0,
+    8.0,
+    12.0
+  ],
+  "n_instances": 30
+}

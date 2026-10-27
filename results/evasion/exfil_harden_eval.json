@@ -3,9 +3,15 @@
   "train_frac": 0.67,
   "threshold": 0.5,
   "held_out_instances": [
-    2,
-    5,
-    8
+    7,
+    8,
+    9,
+    17,
+    18,
+    19,
+    27,
+    28,
+    29
   ],
   "axis": "throttle",
   "results": {
@@ -14,24 +20,24 @@
       "median_min_throttle": 2.0
     },
     "exfil_classical_native_hardened": {
-      "evasion_rate": 1.0,
-      "median_min_throttle": 5.0
+      "evasion_rate": 0.8888888888888888,
+      "median_min_throttle": 3.25
     },
     "exfil_classical_matched": {
       "evasion_rate": 1.0,
-      "median_min_throttle": 1.5
+      "median_min_throttle": 2.0
     },
     "exfil_classical_matched_hardened": {
-      "evasion_rate": 0.0,
-      "median_min_throttle": null
+      "evasion_rate": 1.0,
+      "median_min_throttle": 8.0
     },
     "exfil_quantum": {
       "evasion_rate": 1.0,
-      "median_min_throttle": 0.0
+      "median_min_throttle": 1.0
     },
     "exfil_quantum_hardened": {
       "evasion_rate": 1.0,
-      "median_min_throttle": 5.0
+      "median_min_throttle": 1.5
     }
   }
 }
