@@ -109,7 +109,17 @@ def fig_arms_race():
     """Fig 2: evasion rate across the defense arms race (vs the classical MLP)."""
     labels = ["Timing jitter\nvs. original", "Timing jitter\nvs. hardened",
               "Size padding\nvs. hardened"]
-    rates = [100, 33, 100]
+    # computed from the results, never typed in: jitter before/after from harden_eval.json (held-out
+    # instances), size-axis escalation by scoring sweep_sizeaxis.npz against the hardened native MLP
+    import json
+    from evasion.transfer import min_evading_jitter
+    he = json.load(open("results/evasion/harden_eval.json"))["results"]
+    z = dict(np.load("results/evasion/sweep_sizeaxis.npz"))
+    z["jitters"] = z["values"]                       # grid is size_jitter; the scorer reads "jitters"
+    ev, _, _ = min_evading_jitter(Detector.from_result("results/classical_native_hardened"), z, 0.5)
+    rates = [round(100 * he["classical_native"]["evasion_rate"]),
+             round(100 * he["classical_native_hardened"]["evasion_rate"]),
+             round(100 * ev.mean())]
     colors = [BLUE, GREY, BLUE]
 
     fig, ax = plt.subplots(figsize=(3.6, 2.7))
