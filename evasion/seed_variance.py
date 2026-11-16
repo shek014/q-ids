@@ -69,6 +69,7 @@ def clean(det, splits, class_names):
 
 
 BOX = EV / "sweep_box.npz"
+OUTSIDE = {"outside_jitter_held": EV / "sweep_outside_jitter.npz", "outside_size_held": EV / "sweep_outside_size.npz"}
 
 
 def box_summary(det, box, held, jit):
@@ -84,6 +85,7 @@ def c2_seed(seed, cfgs, tmp):
     size = np.load(EV / "sweep_sizeaxis_full.npz")
     comb = np.load(EV / "sweep_combined_heldout.npz")
     box = np.load(BOX) if BOX.exists() else None
+    outside = {t: np.load(f) for t, f in OUTSIDE.items() if f.exists()}
     jtr, held = split_instances(jit, 0.67)
     s_tr, _ = split_instances(size, 0.67)
     adv_j = adversarial_flows(jit, jtr)
@@ -109,6 +111,10 @@ def c2_seed(seed, cfgs, tmp):
                 v[n]["combined_held"] = pm.summary(pm.score(d, comb))
             if box is not None:
                 v[n]["box_held"] = box_summary(d, box, held, jit)
+            for tag, osw in outside.items():
+                b = pm.box_score(d, osw, np.arange(len(held)), pm.score(d, jit, held)["detected"])
+                v[n][tag] = {"evaded": b["points"], "wilson": b["points_wilson"],
+                             "instances": b["instances"], "median_min": None}
         if variant == "clean":
             v["paired_matched_vqc"] = pm.paired(res["mlp_matched"], res["vqc"])
             v["paired_native_vqc"] = pm.paired(res["mlp_native"], res["vqc"])
@@ -154,7 +160,8 @@ def run(seeds):
     for s in seeds:
         path = OUT / f"seed_{s}.json"
         old = json.loads(path.read_text()) if path.exists() else None
-        if old is not None and ("box" in old["c2"] or not BOX.exists()):
+        want = ["box_held"] * BOX.exists() + [t for t, f in OUTSIDE.items() if f.exists()]
+        if old is not None and all(k in old["c2"]["clean"]["mlp_native"] for k in want):
             print(f"seed {s}: done, skipping")
             continue
         t0 = time.time()
@@ -190,8 +197,10 @@ def summarize():
 
     summ = {}
     has_box = all("box" in r["c2"] for r in recs)
-    c2_lines = ["jitter_held", "size_held", "combined_held"] + (["box_held"] if has_box else [])
-    c2_vars = {"clean": ["jitter_all"] + (["box_held"] if has_box else []),
+    extra = (["box_held"] if has_box else []) + [t for t in OUTSIDE
+                                                 if all(t in r["c2"]["clean"]["mlp_native"] for r in recs)]
+    c2_lines = ["jitter_held", "size_held", "combined_held"] + extra
+    c2_vars = {"clean": ["jitter_all"] + extra,
                "hardened": c2_lines, "joint": c2_lines}
     if has_box:
         c2_vars["box"] = c2_lines

@@ -115,13 +115,23 @@ def c2(out):
         box_table(out, sw, held, lines)
 
 
+OUTSIDE = {"outside_jitter": "sweep_outside_jitter.npz", "outside_size": "sweep_outside_size.npz"}
+
+
 def box_table(out, sw, held, lines, box_path=EV / "sweep_box.npz", box_suffix="_box_hardened"):
-    """Range-wide hardening: every hardening round scored on the three held-out lines and on held-out
-    random-box points (timing and size jitter drawn together)."""
-    box = np.load(box_path)
+    """Range-wide hardening: every hardening round scored on the three held-out lines, on held-out
+    random-box points (timing and size jitter drawn together), and, once captured, on held-out points
+    outside the trained box (timing jitter past 0.8, or size jitter past 0.6)."""
+    boxes = {"box": (np.load(box_path), held)}
+    for tag, f in OUTSIDE.items():
+        if (EV / f).exists():
+            s = np.load(EV / f)
+            if not np.array_equal(s["inst_seed"], sw["inst_seed"][held]):
+                raise SystemExit(f"{f}: instances differ from the held-out split")
+            boxes[tag] = (s, np.arange(len(held)))
     rounds = [("undefended", ""), ("single", "_hardened"), ("joint", "_joint_hardened"),
               ("box", box_suffix)]
-    print("\n== Range-wide hardening, held-out (evaded/detected per line; box = points, instances)")
+    print("\n== Range-wide hardening, held-out (evaded/detected per line; box sweeps = points, instances)")
     tb = out.setdefault("c2_box", {})
     for name, d in C2:
         print(f"{name}")
@@ -136,9 +146,10 @@ def box_table(out, sw, held, lines, box_path=EV / "sweep_box.npz", box_suffix="_
                 row[line] = pm.summary(pm.score(det, s, idx))
                 cells.append(f"{line} {rate(*row[line]['evaded'])}")
             detected = pm.score(det, sw, held)["detected"]
-            b = pm.box_score(det, box, held, detected)
-            row["box"] = {k: b[k] for k in ("points", "points_wilson", "instances", "instances_wilson")}
-            cells.append(f"box pts {rate(*b['points'], b['points_wilson'])} inst {b['instances'][0]}/{b['instances'][1]}")
+            for tag, (s, idx) in boxes.items():
+                b = pm.box_score(det, s, idx, detected)
+                row[tag] = {k: b[k] for k in ("points", "points_wilson", "instances", "instances_wilson")}
+                cells.append(f"{tag} pts {b['points'][0]}/{b['points'][1]} inst {b['instances'][0]}/{b['instances'][1]}")
             print(f"  {rnd:10s} acc {cm['accuracy']:.3f} FPR {cm['benign_fpr']:.3f}  " + "  ".join(cells))
 
 
