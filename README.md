@@ -21,6 +21,7 @@ unmodified.
 | Evaded by working traffic | 159 of 160 caught attacks, median timing jitter ±20–30% | 167 of 167, send rate cut 2.5–3×, transfer 3.3 s → 4.9–6.0 s |
 | VQC vs MLP on the same inputs (10 training seeds) | VQC easier to evade in 8 of 10 seeds; lowest clean accuracy in 9 of 10 | VQC easier to evade in 8 of 10 seeds; lowest clean accuracy in 10 of 10 |
 | Adversarial training on the attacked axis | stops jitter for the MLPs and trees; payload padding then evades every hardened detector | trees stop throttling; a new volume, chunk jitter or chunk size evades them again |
+| Stricter threshold (more false positives) | trees stop jitter alone at 23–24% benign FPR; padded beacons need 34% (Random Forest) or more | throttling stopped only at 44–49% FPR; never for the VQC |
 | Joint timing + size training | jitter 0.3 plus padding evades the MLPs and VQC on 6–9 of 9 in every seed, XGBoost on 2–7; the Random Forest holds (2 of 9) | not run |
 
 Clean accuracy is deliberately *not* 100%: the benign traffic includes services that genuinely
@@ -200,7 +201,7 @@ mkdir -p win && editcap -i 60 out.pcap win/w.pcap
 python -m features.extract --pcap-dir win --out data/real_benign.npz
 
 python paper/realism_check.py                # -> paper/figures/fig6_realism.pdf
-python paper/make_figures.py                 # -> paper/figures/fig1-fig5
+python paper/make_figures.py                 # -> paper/figures/fig1-fig5, fig7 (after operating_point)
 cp paper/figures/*.pdf paper/tex/figures/
 ```
 
@@ -208,6 +209,7 @@ cp paper/figures/*.pdf paper/tex/figures/
 
 ```bash
 python paper/make_tables.py --json results/evasion/paper_tables.json   # every results table in the paper
+python -m evasion.operating_point                                      # matched-FPR analysis (Fig. 7 data)
 python -m evasion.seed_variance --seeds 0-4 &                           # retrain all detectors, seeds 0-9,
 python -m evasion.seed_variance --seeds 5-9 &                           # and rescore the saved sweeps
 wait && python -m evasion.seed_variance --summarize                     # median [min, max] across seeds
