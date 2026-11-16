@@ -11,6 +11,13 @@ We measure clean accuracy and benign FPR explicitly so that cost is visible. Run
 captures, no root):
 
     .venv/bin/python -m evasion.joint_harden
+
+Range-wide hardening is the same round with the size line replaced by the random-box sweep
+(evasion/sweep.py --box), which samples timing and size jitter together across the whole region. It
+folds in the same number of extra beacons per train instance (8), spread over the region instead of
+along one line:
+
+    .venv/bin/python -m evasion.joint_harden --extra-sweep results/evasion/sweep_box.npz --suffix box_hardened
 """
 import argparse
 from pathlib import Path
@@ -25,8 +32,10 @@ from evasion.harden import adversarial_flows, split_instances, train_baselines, 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--sweep", default="results/evasion/sweep.npz", help="jitter-axis sweep")
-    p.add_argument("--size-sweep", default="results/evasion/sweep_sizeaxis_full.npz",
-                   help="size-axis sweep over ALL instances (timing jitter held at an evading value)")
+    p.add_argument("--size-sweep", "--extra-sweep", dest="size_sweep",
+                   default="results/evasion/sweep_sizeaxis_full.npz",
+                   help="second sweep over ALL instances folded in with the jitter sweep: the size line at "
+                        "timing jitter 0.5 (default), or the random-box sweep for range-wide hardening")
     p.add_argument("--data", default="data/dataset.npz")
     p.add_argument("--train-frac", type=float, default=0.67,
                    help="must match evasion.harden so the held-out split is identical for a clean comparison")
@@ -54,13 +63,13 @@ def main():
     yadv = np.full(len(Xadv), c2_idx)
     Xtr_aug = np.vstack([Xtr, Xadv])
     ytr_aug = np.concatenate([ytr, yadv])
-    print(f"clean train {len(Xtr)} + {len(Xj)} jitter-swept + {len(Xs)} size-swept beacons "
+    print(f"clean train {len(Xtr)} + {len(Xj)} jitter-swept + {len(Xs)} beacons from {args.size_sweep} "
           f"= {len(Xtr_aug)} train flows\n"
           f"  jitter train instances {jtrain}\n  size   train instances {strain}\n"
           f"  held out (jitter {jheld}, size {sheld}); clean test unchanged ({len(Xte)})\n")
 
     aug = ((Xtr_aug, ytr_aug), (Xva, yva), (Xte, yte))
-    print("retraining JOINT-hardened on augmented data (clean-test accuracy | benign false-positive rate):")
+    print(f"retraining {args.suffix} on augmented data (clean-test accuracy | benign false-positive rate):")
     for name, (acc, fpr) in [
         (f"classical_native_{args.suffix}",
          train_mlp(aug, None, mlp_cfg, class_names, Path(f"results/classical_native_{args.suffix}"))),
