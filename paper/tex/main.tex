@@ -49,15 +49,16 @@ by throughput. The six detectors are a from-scratch neural network on two input 
 variational quantum classifier on matched inputs, Random Forest, XGBoost, and a single-feature rule. Of
 327 cases in which a detector flagged the unmodified attack, 326 were then evaded by working traffic:
 C2 beacons by randomizing check-in timing by a median of $\pm$20--30\%, exfiltration by slowing the
-transfer from about 3\,s to 6\,s against a 60\,s deadline. The quantum classifier was harder to evade
-than its matched classical counterpart on 9 of 19 paired C2 instances, easier on 8, and easier on all 21
-paired exfiltration instances. Adversarial training closes the attacked axis only for the configuration
+transfer from about 3\,s to 6\,s against a 60\,s deadline. Over ten training seeds, the quantum
+classifier had the lowest clean accuracy of the learned detectors in 19 of 20 runs and was easier to
+evade than its matched classical counterpart in 8 of 10 seeds on each family. Adversarial training
+closes the attacked axis only for the configuration
 it was shown: payload-size padding re-breaks every hardened C2 detector, and changing the transfer
 volume, chunk timing or chunk size restores evasion against hardened tree ensembles that had resisted
-throttling. Hardening on timing and payload size together cuts jitter evasion to at most 1 of 9
-held-out beacons, but heavier padding still evades the jointly hardened MLPs and VQC on 7 of 9, and a
-beacon combining $\pm$30\% jitter with padding evades every jointly hardened learned detector except the
-Random Forest (2 of 9). In a public capture of a normal
+throttling. Hardening on timing and payload size together cuts jitter evasion to at most 2 of 9
+held-out beacons for the classical detectors, but a beacon combining $\pm$30\% jitter with padding still
+evades the jointly hardened MLPs and VQC on 6 to 9 of 9 in every seed and XGBoost on 2 to 7; only the
+Random Forest holds (2 of 9). In a public capture of a normal
 host, 12.3\% of benign flows are as regular as our C2 beacons, against 41.9\% in our synthetic mix.
 \end{abstract}
 
@@ -78,7 +79,7 @@ adversarial training
 \begin{itemize}
   \item Six flow-level detectors attacked with real traffic checked by a functional oracle
   \item A median 30\% check-in jitter or a 2.5--3x lower send rate evades six detectors
-  \item An 8-qubit quantum classifier is not consistently harder to evade than an MLP
+  \item An 8-qubit quantum classifier was the easier target in 8 of 10 training seeds
   \item Adversarial training holds only for the attack configurations it was trained on
   \item 12.3\% of benign flows in a public capture are as regular as a C2 beacon
 \end{itemize}
@@ -145,14 +146,16 @@ Every detector was evaded on every attack instance it had flagged, with one exce
 median C2 evasion took at most $\pm$30\% check-in jitter, and no evaded beacon needed more than
 $\pm$80\%. Exfiltration evasion cut the target send rate by a factor of 2.5 to 3, which added a median of
 1.6--2.7\,s to a 3.3\,s transfer against a 60\,s deadline. The tree ensembles were no harder to evade
-than the MLP, and the VQC was neither consistently harder nor easier to evade than the MLP trained on
-its inputs. Hardening closed the attacked axis for the trained configuration only. Payload-size padding
+than the MLP. We retrained every detector with ten model seeds: the VQC was easier to evade than the MLP
+trained on its inputs in 8 of 10 seeds on each family, and its clean accuracy was the lowest of the
+learned detectors in 19 of the 20 runs. Hardening closed the attacked axis for the trained configuration only. Payload-size padding
 re-broke every hardened C2 detector, and hardened tree ensembles that resisted exfiltration throttling
 were evaded again once the attacker also changed the transfer volume, chunk timing or chunk size.
-Hardening on timing and size together cut timing-jitter evasion to at most 1 of 9 held-out beacons for
-every learned detector, and size-jitter evasion to at most 1 of 9 for the tree ensembles. The jointly hardened MLPs and VQC were still evaded by padding, at two to
-six times the size jitter that broke their single-axis versions, and a beacon combining $\pm$30\% jitter
-with padding evaded every jointly hardened learned detector except the Random Forest.
+Hardening on timing and size together cut timing-jitter evasion to at most 2 of 9 held-out beacons
+for the classical detectors and size-jitter evasion to at most 1 of 9 for the tree ensembles. Padding
+still evaded the jointly hardened MLPs and VQC in most seeds, and a beacon combining $\pm$30\% jitter
+with padding evaded the jointly hardened MLPs and VQC on 6 to 9 of 9 held-out beacons in every seed and
+XGBoost on 2 to 7. Only the Random Forest held.
 
 Our contributions are:
 \begin{itemize}
@@ -161,11 +164,12 @@ Our contributions are:
         only if the detector caught the unmodified attack.
   \item A comparison of six detectors (an MLP on two input sets, a VQC on matched inputs, Random
         Forest, XGBoost and a single-feature rule) on identical captured flows. To our knowledge this is
-        the first problem-space comparison of a quantum and a classical classifier on a security task.
+        the first problem-space comparison of a quantum and a classical classifier on a security task,
+        and we repeat it over ten training seeds.
   \item Evidence from both attack families that adversarial training defends the attack configuration
         it was trained on: changing one further attacker-controlled parameter restores evasion at close
         to the original cost. Hardening on two C2 parameters together leaves combinations of them open
-        for four of the five learned detectors.
+        for the MLPs and the VQC in every seed, and partly open for XGBoost.
   \item A methodological result: evasion queries must reproduce the network conditions of the
         training captures. Exfiltration queries run on an uncontended two-host topology were out of
         distribution, and two detectors called them benign with no perturbation applied.
@@ -250,10 +254,10 @@ these measure robustness to $L_p$-bounded perturbations of the encoded input, wh
 to any input an attacker could produce.
 
 To our knowledge, ours is the first comparison of a quantum and a classical classifier on a security
-task in which robustness is measured against realized, functionality-preserving attack traffic. On C2,
-the VQC needed more jitter than the matched MLP on 9 of 19 paired instances, less on 8, and the same on
-2. On exfiltration it was evaded at a lower throttle on all 21 paired instances
-(Sections~\ref{sec:paired} and~\ref{sec:exfil-results}).
+task in which robustness is measured against realized, functionality-preserving attack traffic. Over ten
+training seeds, the VQC needed less perturbation than the matched MLP on 157 of 249 paired C2 instances
+and more on 49, and on exfiltration less on 119 of 257 and more on 48
+(Section~\ref{sec:seeds}).
 
 \subsection{Adversarial training and its limits}
 Adversarial training is the standard defense and has been studied for
@@ -263,7 +267,7 @@ held-out jitter evasion to 0 of 9 for four of the five learned C2 detectors, and
 then re-broke every one of them on every instance it detected (Section~\ref{sec:defense}). On
 exfiltration, hardened tree ensembles that stopped throttled transfers were evaded again once the
 attacker changed the chunk size (Section~\ref{sec:exfil-results}). Training on both C2 axes at once
-held only for the Random Forest once the attacker combined them (Section~\ref{sec:joint}).
+held against the combined attack only for the Random Forest (Section~\ref{sec:joint}).
 
 % =====================================================================
 \section{Methodology}
@@ -475,7 +479,8 @@ comparison. All six detectors are scored with the same decision rule (Eq.~\ref{e
 \centering
 \caption{Detector architectures and training configuration. The matched MLP and the VQC receive
 identical PCA-8 inputs; the native MLP uses all 17 features. All models use the Adam optimizer,
-cross-entropy loss, and random seed 0.}
+cross-entropy loss. The detailed results use model seed 0; Section~\ref{sec:seeds} repeats them
+with seeds 0--9.}
 \label{tab:detectors}
 \setlength{\tabcolsep}{4.5pt}\small
 \begin{tabular}{llll}
@@ -581,6 +586,15 @@ of minimal evading jitter on the same flows, and (c) transfer, meaning whether a
 evade one detector also evades another. The same flows are reused for the adversarially trained
 models, so capture noise does not differ between any two detectors being compared.
 
+\subsection{Training-seed variation}
+\label{sec:seeds-method}
+A single training run cannot separate a property of a model family from the luck of one initialisation.
+We therefore retrain every learned detector with model seeds 0 to 9, keeping the data split fixed at the
+paper's split. The seed sets the MLP and VQC initial weights and batch order and the Random Forest and
+XGBoost random state; the single-feature rule has no random component. Each seed covers the clean,
+single-axis hardened and jointly hardened detectors of both families, and every seed is scored on the
+same saved sweeps with the same conventions. Seed 0 reproduces the detailed tables, which report it.
+
 \subsection{Adversarial-training defense and axis escalation}
 \label{sec:defense-method}
 We fold evaded beacons from the sweep into the training set, labeled C2, and retrain each detector. To
@@ -677,9 +691,9 @@ from differences that lie outside them.
 \subsection{Clean detection performance}
 \label{sec:clean}
 On the held-out test set (189 flows, 54 of them beacons; Table~\ref{tab:clean}) the five learned
-detectors reach 84.1--85.7\% accuracy with 87--96\% beacon recall. The VQC, at 84.1\%, ties the Random
-Forest and is 1.6 points, three test flows, behind the best classical model. On an earlier dataset one
-third this size it reached only 74.6\%, so that deficit came from the amount of training data. The
+detectors reach 84.1--85.7\% accuracy with 87--96\% beacon recall. The VQC's 84.1\% ties the Random
+Forest, but seed 0 is its best of ten training seeds; its median over seeds is 80.2\% (77.2--84.1\%),
+against 83.6--86.2\% for the classical learned detectors (Section~\ref{sec:seeds}). The
 \texttt{cv\_iat} rule catches 96\% of beacons but flags 52\% of benign flows, so timing regularity alone
 is not enough to detect C2 here. The learned detectors flag 16--19\% of benign flows. The rigid benign
 host overlaps the beacons at low \texttt{cv\_iat} and low \texttt{std\_packet\_size}
@@ -785,13 +799,17 @@ them reflects the model.
 
 \paragraph{Paired minimal evading jitter.} On the 19 instances that both the matched MLP and the VQC
 detected and were evaded on, the VQC required more jitter in 9, the MLP in 8, and they tied at grid
-resolution in 2. Their clean accuracy differs by 1.6 points (Table~\ref{tab:clean}). Neither model is
-consistently harder to evade.
+resolution in 2. Seed 0 is the closest of the ten training seeds: in 8 of the 10 the VQC was evaded at
+the lower jitter on most paired instances (Section~\ref{sec:seeds}).
 
 \paragraph{Transferability.} Of the minimal-jitter evasions crafted against the native MLP, 10 of 20
 also evade the VQC on instances the VQC detected; of those crafted against the VQC, 15 of 19 also evade
 the MLP (Table~\ref{tab:transfer}). The grid is coarse, so a beacon tuned to just cross one detector's
-threshold can sit one grid step short of the other's.
+threshold can sit one grid step short of the other's, and these two rates vary widely across training
+seeds (Section~\ref{sec:seeds}). Transfer to the deployed-style detectors is stable: evasions tuned
+against the native MLP also evade the Random Forest on 20 of 20, XGBoost on 30 of 30 and the rule on
+30 of 30 instances they detected. An attacker therefore needs no query access to the deployed detector:
+tuning against a surrogate MLP suffices for these three.
 
 \begin{table}[h]
 \centering
@@ -804,6 +822,9 @@ Evasion tuned against $\rightarrow$ scored on & Transfer rate \\
 \midrule
 MLP (native) $\rightarrow$ VQC & 50\% (10/20\,{\scriptsize[0.30, 0.70]}) \\
 VQC $\rightarrow$ MLP (native) & 79\% (15/19\,{\scriptsize[0.57, 0.91]}) \\
+MLP (native) $\rightarrow$ Random Forest & 100\% (20/20\,{\scriptsize[0.84, 1.00]}) \\
+MLP (native) $\rightarrow$ XGBoost & 100\% (30/30\,{\scriptsize[0.89, 1.00]}) \\
+MLP (native) $\rightarrow$ \texttt{cv\_iat} rule & 100\% (30/30\,{\scriptsize[0.89, 1.00]}) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -816,7 +837,8 @@ the remaining 9 instances (three per interval) out for evaluation (Section~\ref{
 \paragraph{Held-out jitter evasion after hardening.} On the held-out instances, jitter evasion drops
 from 100\% to 0\% against the hardened MLPs, Random Forest and XGBoost (Table~\ref{tab:hardened}). Their
 clean accuracy moves by at most 2.1 points and their benign FPR by at most 3.7 points, and the FPR falls
-for three of the four. Against the hardened VQC, 6 of 9 held-out beacons still evade, at a median jitter
+for three of the four. Against the hardened VQC, 6 of 9 held-out beacons still evade (3 to 8 of 9 across
+training seeds), at a median jitter
 of $0.45$ against $0.35$ before hardening, and its benign FPR rises from 0.17 to 0.25. The \texttt{cv\_iat} rule sees only timing, and jittered beacons have the same
 \texttt{cv\_iat} as moderate benign traffic, so retraining leaves it unchanged: all 9 held-out beacons
 still evade.
@@ -887,23 +909,28 @@ the 9 held-out instances (Table~\ref{tab:joint}). Size jitter is swept up to $0.
 64\,B payload over 26 to 102\,B; training beacons carry 32 to 128\,B. Timing jitter is swept up to $0.8$. A detector that resists to the top of a grid is resistant only up to
 that value.
 
-Joint hardening closes timing jitter: at most 1 of 9 held-out beacons evades any learned detector, and
-the one that evades the MLPs needs jitter $0.8$. The tree ensembles also stop the size sweep at jitter
-$0.5$ (Random Forest 0 of 9, XGBoost 1 of 9). The MLPs and the VQC do not. Padding still evades them on
-7 of 9 beacons, at a median size jitter of $0.4$--$0.6$, against $0.1$--$0.3$ for their single-axis
-versions (Table~\ref{tab:sizeaxis}).
+In the seed-0 models (Table~\ref{tab:joint}), joint hardening closes timing jitter: at most 1 of 9
+held-out beacons evades any learned detector, and the one that evades the MLPs needs jitter $0.8$. The
+tree ensembles also stop the size sweep at jitter $0.5$ (Random Forest 0 of 9, XGBoost 1 of 9), with the
+same counts in all ten training seeds. The MLPs and the VQC do not. Padding still evades them on 7 of 9
+beacons, at a median size jitter of $0.4$--$0.6$, against $0.1$--$0.3$ for their single-axis versions
+(Table~\ref{tab:sizeaxis}). This line varies most across seeds: the jointly hardened native MLP is
+evaded on 0 to 8 of its detected beacons depending on the seed, the matched MLP on 1 to 9, the VQC on
+5 to 8.
 
 The third column is the test of whether joint hardening learned the attack or the two lines it was
 trained on. With timing jitter held at $0.3$, between the trained points, and size jitter swept
 upward, every single-axis hardened learned detector is evaded on 9 of 9 beacons at a median size jitter
 of $0.05$--$0.3$. Joint hardening raises that cost to $0.15$--$0.6$ but stops the evasion only for the
-Random Forest, which is evaded on 2 of 9. The jointly hardened MLPs, VQC and XGBoost are evaded on 7 to
-9 of 9.
+Random Forest, which is evaded on 2 of 9 in every seed. The jointly hardened MLPs and VQC are evaded on
+6 to 9 of 9 in every seed. XGBoost is evaded on 7 of 9 at seed 0 but on 2 to 7 across seeds (median 4),
+so for XGBoost joint hardening partly holds.
 
-The clean cost is uneven. Relative to single-axis hardening, joint hardening lowers the learned
-detectors' accuracy by 0 to 2.1 points; the benign FPR rises for the native MLP (0.170 to 0.178), the VQC (0.252 to 0.274) and the
-Random Forest (0.148 to 0.170), and falls for the matched MLP (0.163 to 0.148) and XGBoost (0.170 to
-0.156). The \texttt{cv\_iat} rule moves its cut far enough to flag jitter-$0.5$ beacons, which costs it a
+Relative to single-axis hardening, joint hardening lowers the learned detectors' accuracy by 0 to 2.1
+points at seed 0. Its effect on the benign FPR is clearer across seeds than at seed 0, where it rose for
+three detectors and fell for two. Over ten seeds it rose in 9 seeds for the native MLP (median
++2.2 points), 9 for the Random Forest (+1.5), 8 for the VQC (+1.1) and 6 for the matched MLP (+0.7), and
+fell in 6 seeds for XGBoost ($-1.1$). The \texttt{cv\_iat} rule moves its cut far enough to flag jitter-$0.5$ beacons, which costs it a
 benign FPR of 0.674, and it is still evaded by every held-out beacon at jitter $0.8$.
 
 \begin{table}[htbp]
@@ -995,10 +1022,11 @@ band.}
 \label{fig:exfil-curve}
 \end{figure}
 
-\paragraph{Classical vs.\ quantum and transfer.} On the 21 instances both the matched MLP and the VQC
-detected, the VQC was evaded at a lower throttle in all 21. Evasions tuned against the native MLP evade
-the VQC in 21 of 21 cases, and those tuned against the VQC evade the MLP in 0 of 21. On exfiltration the
-VQC is the weaker detector and the easier target.
+\paragraph{Classical vs.\ quantum and transfer.} At seed 0, on the 21 instances both the matched MLP
+and the VQC detected, the VQC was evaded at a lower throttle in all 21. Evasions tuned against the native
+MLP evade the VQC in 21 of 21 cases, and those tuned against the VQC evade the MLP in 0 of 21. Seed 0 is
+the most one-sided of the ten training seeds; in two seeds the VQC needed the higher throttle on most
+paired instances (Section~\ref{sec:seeds}).
 
 \paragraph{Adversarial training.} We fold functional throttled-exfiltration flows from 21 instances
 back in as exfil, retrain, and evaluate on the 9 held-out instances (Table~\ref{tab:exfil-hardened}).
@@ -1071,6 +1099,53 @@ Throughput rule & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s & 6/6\,{\scriptsize[0.
 \end{tabular}
 \end{table}
 
+\subsection{Variation across training seeds}
+\label{sec:seeds}
+Table~\ref{tab:seeds} repeats the main measurements over model seeds 0 to 9
+(Section~\ref{sec:seeds-method}). The evasion results do not depend on the seed. In every seed, the
+MLPs, Random Forest and XGBoost were evaded on every C2 beacon they detected, apart from one beacon
+against the matched MLP in one seed; the VQC was evaded on 90--100\%, and every learned detector on every
+exfiltration it detected.
+Single-axis hardening closed held-out jitter evasion to at most 3 of 9 beacons for the MLPs and to 0 of 9
+for the tree ensembles, and payload padding then evaded every hardened learned detector on every
+detected beacon, in every seed. On exfiltration, the hardened Random Forest let through 0 to 2 held-out
+transfers and XGBoost 1 in every seed, and chunk jitter and 8192-byte chunks evaded both on 6 of 6 in
+every seed. Evasions tuned against the native MLP transferred to the Random Forest on 16 to 20 of 20 and
+to XGBoost on 26 to 30 of 30.
+
+The quantum comparison does depend on it. The VQC had the lowest clean accuracy of the five learned
+detectors in 9 of 10 C2 seeds and in all 10 exfiltration seeds. Pooled over seeds, the VQC needed less
+jitter than the matched MLP on 157 of 249 paired C2 instances, more on 49, and the same on 43. On
+exfiltration it needed a lower throttle on 119 of 257, a higher one on 48, and the same on 90. Counted
+per seed, it was the easier target on most paired instances in 8 of 10 seeds on each family. Seed 0 is
+an outlier in opposite directions: the most even C2 seed (9 harder, 8 easier) and the most one-sided
+exfiltration seed (21 of 21 easier). Transfer between the two varies as much: evasions tuned against
+the VQC fooled the native MLP on 1 of 19 to 25 of 30 instances, depending on the seed, so the asymmetry
+in Table~\ref{tab:transfer} is not a property of the models.
+
+\begin{table}[htbp]
+\centering
+\caption{Ten training seeds: median [min, max] over model seeds 0--9 of clean test accuracy, the median
+minimal evading perturbation (timing jitter for C2, throttle $c$ for exfiltration), and the evasion
+rate of the combined attack (timing jitter $0.3$ with payload padding) against the jointly hardened
+detector on the 9 held-out instances.}
+\label{tab:seeds}
+\setlength{\tabcolsep}{2.5pt}\scriptsize
+\begin{tabular}{lccccc}
+\toprule
+ & \multicolumn{2}{c}{C2} & \multicolumn{2}{c}{Exfiltration} & Joint, combined \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Detector & Accuracy & Min.\ jitter & Accuracy & Min.\ $c$ & evasion rate \\
+\midrule
+MLP (native)  & 0.862 [0.847, 0.873] & 0.3 [0.25, 0.4]    & 0.884 [0.870, 0.889] & 2.0 [1.5, 2.5]  & 1.00 [0.88, 1.00] \\
+MLP (matched) & 0.860 [0.847, 0.862] & 0.275 [0.25, 0.3]  & 0.882 [0.875, 0.894] & 1.6 [1.5, 2.5]  & 1.00 [0.88, 1.00] \\
+VQC           & 0.802 [0.772, 0.841] & 0.2 [0.175, 0.4]   & 0.847 [0.801, 0.866] & 1.5 [1.0, 2.0]  & 0.89 [0.67, 1.00] \\
+Random Forest & 0.836 [0.831, 0.841] & 0.2 [0.15, 0.225]  & 0.875 [0.870, 0.884] & 1.5 [1.5, 2.0]  & 0.22 [0.22, 0.22] \\
+XGBoost       & 0.847 [0.841, 0.852] & 0.25 [0.25, 0.25]  & 0.880 [0.870, 0.889] & 1.5 [1.5, 2.0]  & 0.44 [0.22, 0.78] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 % =====================================================================
 \section{Discussion}
 \label{sec:discussion}
@@ -1094,17 +1169,20 @@ destination reputation, behaviour aggregated over many windows, or host telemetr
 such signals.
 
 \subsection{Quantum robustness claims and problem-space perturbations}
-On C2 the VQC matched the classical detectors on clean accuracy (84.1\% against 84.1--85.7\%) and was
-neither consistently harder nor easier to evade on identical flows. On exfiltration it was the weaker
-detector and the easier target. West et al.~\cite{west2023nature} measure robustness to small,
+Across ten training seeds the VQC was the weaker detector on both families. Its median clean accuracy
+was 80.2\% on C2 and 84.7\% on exfiltration, against 83.6--86.2\% and 87.5--88.4\% for the classical
+learned detectors, and on identical flows it was evaded at the lower perturbation in 8 of 10 seeds on
+each family. One seed would have told a different story. Seed 0 put the VQC level with the Random
+Forest on C2 accuracy and level with the matched MLP on paired C2 evasion (9 against 8), which is where
+an earlier draft of this paper concluded there was no consistent difference. West et al.~\cite{west2023nature} measure robustness to small,
 $L_p$-bounded perturbations of the encoded input. A problem-space attacker is not limited to small
 feature-space changes: raising check-in jitter from 0 to 0.3, which costs the beacon nothing, moves
 \texttt{cv\_iat} from near 0 into the range of benign traffic. A model of any class that relies on
-\texttt{cv\_iat} will change its verdict under a shift that large. The VQC reached only 74.6\% on a
-dataset one third the size, and 84.1\% on the full one. Had we compared evasion thresholds on the
-smaller dataset, the comparison would have mixed the effect of the architecture with the effect of
-undertraining, so model families should be compared where clean detection is neither saturated nor
-short of data.
+\texttt{cv\_iat} will change its verdict under a shift that large. At seed 0 the VQC reached 74.6\% on
+a dataset one third the size and 84.1\% on the full one. A comparison of evasion thresholds on the
+smaller dataset would have mixed the effect of the architecture with the effect of undertraining. Model
+families should be compared where clean detection is neither saturated nor short of data, and over
+several training seeds.
 
 \subsection{Adversarial training and untrained attack parameters}
 Hardening against timing jitter cut held-out jitter evasion from 100\% to 0\% for the MLPs and tree
@@ -1120,13 +1198,15 @@ parameters the training data never varied.
 
 Covering two parameters at once did not fix this for C2. Joint timing+size hardening held the tree
 ensembles to at most 1 of 9 evasions along each of the two lines it was trained on, and raised the
-padding the MLPs and VQC needed from $0.1$--$0.3$ to $0.4$--$0.6$. A beacon at timing jitter $0.3$, between the trained points,
-then evaded the jointly hardened MLPs, VQC and XGBoost on 7 to 9 of 9 held-out instances. Only the Random
-Forest held, at 2 of 9 and a benign FPR of 0.170, below its undefended 0.185. We had expected joint
-hardening to raise the false-positive rate across the board, and it did not: the FPR rose for three
-learned detectors and fell for two. The training data covered two lines through a two-parameter space.
-XGBoost held on both lines and missed the region between them; the MLPs and the VQC did not hold even
-on held-out beacons of the size line. Our threat model gives the beacon four such parameters
+padding the MLPs and VQC needed from $0.1$--$0.3$ to $0.4$--$0.6$ at seed 0. A beacon at timing jitter
+$0.3$, between the trained points, then evaded the jointly hardened MLPs and VQC on 6 to 9 of 9 held-out
+instances in every training seed, and XGBoost on 2 to 7. Only the Random Forest held, at 2 of 9 in every
+seed and a benign FPR of 0.170 at seed 0, below its undefended 0.185. Across seeds, joint hardening raised
+the benign FPR over single-axis hardening in most seeds for four of the five learned detectors, by a
+median of 0.7 to 2.2 points; XGBoost was the exception. The training data covered two lines through a
+two-parameter space. XGBoost held on both lines and missed part of the region between them; the MLPs
+and the VQC did not hold even on held-out beacons of the size line in most seeds. Our threat model gives
+the beacon four such parameters
 (Section~\ref{sec:threat}), and we hardened against two.
 
 \subsection{Matching query conditions to training captures}
@@ -1163,6 +1243,9 @@ limit on which features we tested, not on whether the tested features survive mo
         instances per family and each exfiltration escalation sweep on 6, so a 6/6 result has a Wilson
         lower bound of 0.61. These sweeps test a specific explanation and do not estimate rates
         precisely.
+  \item \emph{Training seeds vary the model, not the data.} The ten-seed study changes initialisation
+        and sampling with the split and the captured traffic held fixed. We did not recapture the training
+        traffic, so variation from a different set of scenario runs is not measured.
   \item \emph{Finite grids.} Timing jitter is swept to $0.8$, size jitter to $0.6$ and the throttle to
         $c=12$. A detector that is not evaded on a grid is resistant only up to its top value.
   \item \emph{Two attack families, binary tasks.} Both tasks separate one attack class from benign
@@ -1187,12 +1270,12 @@ is sent as real traffic and admitted only if the attack keeps working. Across C2
 exfiltration, six classical, tree-based, rule-based and quantum detectors were evaded on 326 of the
 327 cases in which a detector caught the unmodified attack. The median C2 evasion needed at most
 $\pm30\%$ check-in jitter and none needed more than $\pm80\%$; exfiltration evasion added a median of at
-most 2.7\,s to a 3.3\,s transfer, against a 60\,s deadline. On matched inputs the VQC was harder to evade
-than the MLP on 9 of 19 paired C2 instances, easier on 8, and easier on all 21 paired exfiltration
-instances. Adversarial training closed the attacked axis for the trained configuration only, and
+most 2.7\,s to a 3.3\,s transfer, against a 60\,s deadline. Over ten training seeds, the VQC had lower clean
+accuracy than the MLP on its inputs in every run and was the easier target in 8 of 10 seeds on each
+family; a single seed would have shown it level on C2. Adversarial training closed the attacked axis for the trained configuration only, and
 changing one further parameter (payload size for C2, volume, chunk jitter or chunk size for
 exfiltration) restored evasion at close to the original cost. Hardening on timing and size together
-held against the combined attack only for the Random Forest. All six detectors depend on flow features
+held against the combined attack only for the Random Forest, in every seed. All six detectors depend on flow features
 the attacker sets. Two questions remain open: how attacks whose signal is bound to their function
 behave under the same evaluation, and whether features an attacker cannot change cheaply resist this
 kind of evasion.
