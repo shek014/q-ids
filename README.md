@@ -66,6 +66,7 @@ q-ids/
 ├── evaluation/    from-scratch metrics and the model comparison harness
 ├── evasion/       query primitive, functional oracles, sweeps, transfer, hardening
 ├── configs/       model configs and scenario configs (c2.yaml, exfil.yaml)
+├── data/          flow datasets used by the paper (dataset, exfil_dataset, real_benign .npz)
 ├── results/       model metadata and evasion results (JSON/NPZ)
 └── paper/         LaTeX source, figure script, section drafts
 ```
@@ -139,7 +140,7 @@ The exfiltration study mirrors these steps with `configs/scenarios/exfil.yaml`,
 
 ## Citation
 
-Code and data are archived on Zenodo: [10.5281/zenodo.23180178](https://doi.org/10.5281/zenodo.23180178).
+Code and data are archived on Zenodo: [10.5281/zenodo.23180177](https://doi.org/10.5281/zenodo.23180177) (resolves to the latest version).
 
 ## License
 
