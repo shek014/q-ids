@@ -19,9 +19,9 @@ unmodified.
 | What the detectors key on | timing regularity (`cv_iat`) | throughput (`bytes_per_second`) |
 | Clean test accuracy | 0.841–0.857 learned; rule 0.619 | 0.801–0.889 learned; rule 0.880 |
 | Evaded by working traffic | 159 of 160 caught attacks, median timing jitter ±20–30% | 167 of 167, send rate cut 2.5–3×, transfer 3.3 s → 4.9–6.0 s |
-| VQC vs MLP on the same inputs | VQC harder to evade on 9 of 19, easier on 8 | VQC easier to evade on 21 of 21 |
+| VQC vs MLP on the same inputs (10 training seeds) | VQC easier to evade in 8 of 10 seeds; lowest clean accuracy in 9 of 10 | VQC easier to evade in 8 of 10 seeds; lowest clean accuracy in 10 of 10 |
 | Adversarial training on the attacked axis | stops jitter for the MLPs and trees; payload padding then evades every hardened detector | trees stop throttling; a new volume, chunk jitter or chunk size evades them again |
-| Joint timing + size training | jitter 0.3 plus padding still evades every learned detector except the Random Forest (2 of 9) | not run |
+| Joint timing + size training | jitter 0.3 plus padding evades the MLPs and VQC on 6–9 of 9 in every seed, XGBoost on 2–7; the Random Forest holds (2 of 9) | not run |
 
 Clean accuracy is deliberately *not* 100%: the benign traffic includes services that genuinely
 resemble the attack (regular health checks for C2, large legitimate transfers for exfiltration). An
@@ -204,9 +204,19 @@ python paper/make_figures.py                 # -> paper/figures/fig1-fig5
 cp paper/figures/*.pdf paper/tex/figures/
 ```
 
-The JSON summaries written above count every attack instance. The paper's tables count only instances
-a detector flagged unmodified and add Wilson intervals; no script in this repository produces those
-tables yet.
+### Paper tables and training-seed variation
+
+```bash
+python paper/make_tables.py --json results/evasion/paper_tables.json   # every results table in the paper
+python -m evasion.seed_variance --seeds 0-4 &                           # retrain all detectors, seeds 0-9,
+python -m evasion.seed_variance --seeds 5-9 &                           # and rescore the saved sweeps
+wait && python -m evasion.seed_variance --summarize                     # median [min, max] across seeds
+```
+
+The JSON summaries from the earlier steps count every attack instance. `paper/make_tables.py` applies
+the paper's conventions (an attack counts only if the detector flagged it unmodified; Wilson 95%
+intervals), defined in [`evasion/paper_metrics.py`](evasion/paper_metrics.py). The seed study keeps the
+data split fixed and varies only the model seed; seed 0 reproduces the paper's detailed tables.
 
 ## Non-goals
 
