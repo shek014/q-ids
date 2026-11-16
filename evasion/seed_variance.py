@@ -5,8 +5,10 @@ single-feature rule is deterministic, so it is not retrained. Seed 0 reproduces 
 
 Per seed, for both families, it trains the clean detectors, the single-axis hardened detectors and (C2)
 the jointly hardened detectors exactly as evasion/harden.py, evasion/exfil_harden.py and
-evasion/joint_harden.py do, scores them with the conventions of evasion/paper_metrics.py, and writes
-results/seeds/seed_<k>.json. Finished seeds are skipped, so runs can be split across processes:
+evasion/joint_harden.py do, plus (C2, once results/evasion/sweep_box.npz exists) the range-wide
+box-hardened detectors, scores them with the conventions of evasion/paper_metrics.py, and writes
+results/seeds/seed_<k>.json. Finished seeds are skipped, so runs can be split across processes. A seed
+file written before the box sweep existed gets its C2 part recomputed (exfil is kept):
 
     .venv/bin/python -m evasion.seed_variance --seeds 0-4 &
     .venv/bin/python -m evasion.seed_variance --seeds 5-9 &
@@ -66,18 +68,32 @@ def clean(det, splits, class_names):
             "benign_fpr": float((flag & ~mal).sum() / (~mal).sum())}
 
 
+BOX = EV / "sweep_box.npz"
+
+
+def box_summary(det, box, held, jit):
+    b = pm.box_score(det, box, held, pm.score(det, jit, held)["detected"])
+    return {"evaded": b["points"], "wilson": b["points_wilson"], "instances": b["instances"],
+            "median_min": None}
+
+
 def c2_seed(seed, cfgs, tmp):
     splits, cn = splits_for("data/dataset.npz")
     a = cn.index("c2")
     jit = np.load(EV / "sweep.npz")
     size = np.load(EV / "sweep_sizeaxis_full.npz")
     comb = np.load(EV / "sweep_combined_heldout.npz")
+    box = np.load(BOX) if BOX.exists() else None
     jtr, held = split_instances(jit, 0.67)
     s_tr, _ = split_instances(size, 0.67)
     adv_j = adversarial_flows(jit, jtr)
     adv_js = np.vstack([adv_j, adversarial_flows(size, s_tr)])
+    variants = [("clean", None), ("hardened", adv_j), ("joint", adv_js)]
+    if box is not None:
+        b_tr, _ = split_instances(box, 0.67)
+        variants.append(("box", np.vstack([adv_j, adversarial_flows(box, b_tr)])))
     out = {}
-    for variant, extra in [("clean", None), ("hardened", adv_j), ("joint", adv_js)]:
+    for variant, extra in variants:
         sp = augment(splits, extra, a)
         dets = train_all(sp, cn, seed, cfgs, tmp / variant)
         v = out[variant] = {}
@@ -91,6 +107,8 @@ def c2_seed(seed, cfgs, tmp):
                 v[n]["jitter_held"] = pm.summary(pm.score(d, jit, held))
                 v[n]["size_held"] = pm.summary(pm.score(d, size, held))
                 v[n]["combined_held"] = pm.summary(pm.score(d, comb))
+            if box is not None:
+                v[n]["box_held"] = box_summary(d, box, held, jit)
         if variant == "clean":
             v["paired_matched_vqc"] = pm.paired(res["mlp_matched"], res["vqc"])
             v["paired_native_vqc"] = pm.paired(res["mlp_native"], res["vqc"])
@@ -135,13 +153,15 @@ def run(seeds):
     OUT.mkdir(parents=True, exist_ok=True)
     for s in seeds:
         path = OUT / f"seed_{s}.json"
-        if path.exists():
+        old = json.loads(path.read_text()) if path.exists() else None
+        if old is not None and ("box" in old["c2"] or not BOX.exists()):
             print(f"seed {s}: done, skipping")
             continue
         t0 = time.time()
         tmp = Path(tempfile.mkdtemp(prefix=f"seedvar_{s}_"))
         try:
-            rec = {"seed": s, "c2": c2_seed(s, cfgs, tmp), "exfil": exfil_seed(s, cfgs, tmp)}
+            rec = {"seed": s, "c2": c2_seed(s, cfgs, tmp),
+                   "exfil": old["exfil"] if old is not None else exfil_seed(s, cfgs, tmp)}
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
         path.write_text(json.dumps(rec, indent=1, default=float))
@@ -169,9 +189,13 @@ def summarize():
         return stat([r["evaded"][0] / r["evaded"][1] if r["evaded"][1] else None for r in rows])
 
     summ = {}
-    for fam, variants in [("c2", {"clean": ["jitter_all"],
-                                  "hardened": ["jitter_held", "size_held", "combined_held"],
-                                  "joint": ["jitter_held", "size_held", "combined_held"]}),
+    has_box = all("box" in r["c2"] for r in recs)
+    c2_lines = ["jitter_held", "size_held", "combined_held"] + (["box_held"] if has_box else [])
+    c2_vars = {"clean": ["jitter_all"] + (["box_held"] if has_box else []),
+               "hardened": c2_lines, "joint": c2_lines}
+    if has_box:
+        c2_vars["box"] = c2_lines
+    for fam, variants in [("c2", c2_vars),
                           ("exfil", {"clean": ["throttle_all"],
                                      "hardened": ["throttle_held", "esc_volume", "esc_jitter", "esc_chunk"]})]:
         for var, lines in variants.items():
