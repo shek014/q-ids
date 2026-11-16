@@ -2,7 +2,7 @@
   "classical": {
     "evasion_rate": 1.0,
     "median_min_jitter": 0.3,
-    "mean_min_jitter": 0.31500000000000006,
+    "mean_min_jitter": 0.3183333333333334,
     "median_bracket": [
       0.25,
       0.3
@@ -113,17 +113,17 @@
   },
   "paired": {
     "n_paired": 29,
-    "mean_jitter_diff_vqc_minus_mlp": -0.07758620689655173,
+    "mean_jitter_diff_vqc_minus_mlp": -0.08103448275862067,
     "vqc_harder": 9,
-    "mlp_harder": 13,
-    "tie_at_grid_resolution": 7
+    "mlp_harder": 14,
+    "tie_at_grid_resolution": 6
   },
   "transfer_mlp_evasion_to_vqc": {
     "transfer_rate": 0.6666666666666666,
     "n": 30
   },
   "transfer_vqc_evasion_to_mlp": {
-    "transfer_rate": 0.5517241379310345,
+    "transfer_rate": 0.5172413793103449,
     "n": 29
   },
   "threshold": 0.5,

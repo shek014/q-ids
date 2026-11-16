@@ -3,7 +3,7 @@
   "input_mode": "native",
   "pca_components": null,
   "param_count": 2,
-  "train_time_seconds": 0.021463968998432392,
+  "train_time_seconds": 0.021310912999979337,
   "test_accuracy": 0.6190476190476191,
   "benign_fpr": 0.5333333333333333,
   "n_features": 17,

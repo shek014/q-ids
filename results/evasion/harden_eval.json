@@ -36,8 +36,8 @@
       "median_min_jitter": 0.25
     },
     "quantum_hardened": {
-      "evasion_rate": 0.3333333333333333,
-      "median_min_jitter": 0.4
+      "evasion_rate": 0.6666666666666666,
+      "median_min_jitter": 0.45
     }
   }
 }

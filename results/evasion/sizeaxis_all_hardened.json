@@ -1,0 +1,61 @@
+{
+  "sweep": "results/evasion/sweep_sizeaxis_full.npz",
+  "held_out": [
+    7,
+    8,
+    9,
+    17,
+    18,
+    19,
+    27,
+    28,
+    29
+  ],
+  "fixed_jitter": 0.5,
+  "axis": "size_jitter",
+  "threshold": 0.5,
+  "results": {
+    "classical_native_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.1,
+      "mean_min_jitter": 0.1,
+      "n": 9,
+      "median_queries": 3.0
+    },
+    "classical_matched_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.1,
+      "mean_min_jitter": 0.10555555555555557,
+      "n": 9,
+      "median_queries": 3.0
+    },
+    "quantum_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.05,
+      "mean_min_jitter": 0.12222222222222223,
+      "n": 9,
+      "median_queries": 2.0
+    },
+    "rf_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.15,
+      "mean_min_jitter": 0.13333333333333333,
+      "n": 9,
+      "median_queries": 4.0
+    },
+    "xgb_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.05,
+      "mean_min_jitter": 0.05,
+      "n": 9,
+      "median_queries": 2.0
+    },
+    "threshold_hardened": {
+      "evasion_rate": 1.0,
+      "median_min_jitter": 0.0,
+      "mean_min_jitter": 0.0,
+      "n": 9,
+      "median_queries": 1.0
+    }
+  }
+}
