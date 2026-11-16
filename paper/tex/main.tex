@@ -100,14 +100,16 @@ The \emph{problem-space} setting of Pierazzi et al.~\cite{pierazzi2020} makes th
 attacker must produce a real object, and perturbations are limited to transformations that are
 realizable and preserve the object's function. For network traffic this is hard to evaluate. The map
 from packets to flow features is neither invertible nor differentiable, and a static benchmark dataset
-cannot be regenerated with different attacker parameters. Problem-space evaluation therefore needs a
+cannot be regenerated with different attacker parameters; public intrusion datasets also carry
+documented labelling and representativeness problems~\cite{engelen2021,kenyon2020}. Problem-space evaluation therefore needs a
 traffic generator in the loop: each candidate perturbation is sent, captured and re-featurized before
 the detector sees it, and its effect on the attack is checked.
 
 We chose two attack families whose detectable signal is set by the attacker. A command-and-control
 (C2) beacon checks in with its server at a regular interval, and flow-level beacon detectors key on that
 regularity~\cite{yilmaz2026,gardiner2014}. Within the latency an operator tolerates, randomizing the
-interval or padding the payload costs the beacon nothing. Data exfiltration was picked as the contrast.
+interval or padding the payload costs the beacon nothing. Data exfiltration, whose attack vectors and
+countermeasures Ullah et al.~\cite{ullah2018} review, was picked as the contrast.
 Its signal is throughput, and slowing the transfer to evade a rate-based detector costs time, because
 the data must still leave before a deadline. Benign networks carry traffic with both shapes: NTP and
 health checks are as periodic as a beacon, and backups and downloads move bulk data at high rate. A
@@ -183,9 +185,22 @@ concludes.
 \section{Related Work}
 \label{sec:related}
 
-This work draws on four lines of research: problem-space adversarial machine learning, adversarial
-evasion of network intrusion detectors, flow-level detection of C2 beaconing, and quantum machine
-learning, both as an intrusion detector and as a candidate for adversarial robustness.
+This work draws on five lines of research: evaluation practice for machine-learning intrusion
+detection, problem-space adversarial machine learning, adversarial evasion of network intrusion
+detectors, detection of C2 beaconing, and quantum machine learning, both as an intrusion detector and as
+a candidate for adversarial robustness.
+
+\subsection{Evaluation practice for ML-based intrusion detection}
+Sommer and Paxson~\cite{sommer2010} argued that intrusion detection differs from other machine-learning
+tasks in ways that make lab results transfer poorly, among them the cost of false positives and the
+difficulty of obtaining representative traffic. Arp et al.~\cite{arp2022} catalogue ten pitfalls of
+machine learning in computer security, including sampling bias, inappropriate performance measures, the
+base-rate fallacy and lab-only evaluation. Apruzzese et al.~\cite{apruzzese2023sok} propose assessing
+NIDS under the operational factors that decide deployment. Our evaluation is lab-only in Arp et al.'s
+sense, since all traffic is emulated. We address the other pitfalls we can: false-positive rates are
+reported next to every hardening result and compared at matched values (Section~\ref{sec:op}), the
+synthetic benign mix is checked against a real capture (Section~\ref{sec:testbed}), and model results
+are repeated over ten training seeds (Section~\ref{sec:seeds}).
 
 \subsection{Problem-space and feature-space adversarial attacks}
 Most adversarial-ML results perturb the feature vector directly and measure success in feature space.
@@ -210,7 +225,13 @@ ML-NIDS, especially dynamic ones. Catillo et al.~\cite{catillo2024} built explic
 attacks in 2024. Other work restricts perturbations to fields the attacker controls: Li~\cite{li2026}
 splits flow features into directly, indirectly and non-controllable groups and perturbs only the
 controllable ones, and Jing et al.~\cite{jing2025} evade transformer-based traffic classifiers by
-prepending padding bytes that do not disturb transmission.
+prepending padding bytes that do not disturb transmission. Sheatsley et al.~\cite{sheatsley2022} craft
+adversarial examples that obey domain constraints learned from network data. Two lines of work change
+traffic rather than feature vectors: Rigaki and Garcia~\cite{rigaki2018} used a generative adversarial
+network to adapt malware communication so that it avoided detection, and Han et al.~\cite{han2021}
+studied gray- and black-box traffic-space attacks that mutate original traffic against ML-based NIDS.
+On the defense side, Apruzzese et al.~\cite{apruzzese2020rf} proposed a method for hardening
+random-forest detectors against adversarial perturbations.
 
 We agree with the realism critique and test it on one attack class where it should fail. In C2
 beaconing, the detectable signal (timing and size regularity) is a set of parameters the attacker
@@ -220,7 +241,9 @@ kept checking in. Li's controllable features appear in our setup as the timing-j
 parameters of the beacon generator. The difference is that our generator must emit valid traffic, so
 a perturbation that cannot be sent is never scored. This also lets us measure three quantities a
 feature-space attack cannot: the minimal realizable evading perturbation, the number of black-box
-queries to evasion, and whether the perturbed attack still functions.
+queries to evasion, and whether the perturbed attack still functions. Where the traffic-space attacks
+above search for an evading sample, we sweep the attacker's parameters on a fixed grid, so the cost of
+evasion is measured per detector on identical traffic.
 
 \subsection{Detecting C2 beaconing}
 A beacon checks in at a near-constant interval, so flow-level beacon detectors look for timing
@@ -232,18 +255,29 @@ seconds of slack, raising jitter costs the beacon nothing. Benign NTP, health ch
 as regular as a naive beacon, which limits how far a detector can tighten its threshold before it
 flags them.
 
+Earlier C2 detectors look at many connections over long periods rather than one flow. BotFinder
+\cite{tegeler2012} detects bots from statistics of their network traffic without inspecting payloads,
+Disclosure~\cite{bilge2012} identifies C2 servers from large-scale NetFlow records, and
+BAYWATCH~\cite{hu2016baywatch} detects beaconing hosts in enterprise-scale networks. These systems
+aggregate behaviour over horizons our 60\,s window does not cover (Section~\ref{sec:window}); we did not
+evaluate them.
+
 \subsection{Quantum machine learning for intrusion detection}
 Variational quantum classifiers, quantum SVMs and quantum CNNs have been applied to intrusion
 detection, with reported accuracy close to or above classical
 baselines~\cite{abreu2024,thomos2026,qvcnn2024}; Sai et al.~\cite{qml_sec_taxonomy2025} give a taxonomy
 of quantum machine learning for security. These studies report clean accuracy on static feature
-datasets and do not test evasion. We train a VQC and a classical MLP on matched inputs
+datasets and do not test evasion. Our VQC uses the circuit-centric classifier design of Schuld et
+al.~\cite{schuld2020}. Variational circuits are known to be hard to train~\cite{cerezo2021}, and a single
+training run can misstate a model family, which is one reason we repeat every model over ten seeds. We train a VQC and a classical MLP on matched inputs
 (Section~\ref{sec:detectors}) and compare them on the same captured attack traffic.
 
 \subsection{Adversarial robustness of quantum classifiers}
 Outside intrusion detection, a separate literature asks whether quantum classifiers resist
 adversarial examples better than classical ones. Lu et al.~\cite{lu2020} and Liao et
-al.~\cite{liao2021} showed that VQCs are vulnerable to adversarial examples. West et
+al.~\cite{liao2021} showed that VQCs are vulnerable to adversarial examples, and Liu and
+Wittek~\cite{liu2020} showed that the perturbation needed to misclassify a quantum classifier shrinks as
+the dimension of its Hilbert space grows. West et
 al.~\cite{west2023nature} reported that quantum models can learn features that classical adversarial
 attacks do not disturb, and later benchmarked adversarially robust quantum models at
 scale~\cite{west2023bench}; Kustiawan and Ghauth~\cite{qml_robust_review2026} review the area. All of
@@ -257,9 +291,13 @@ and more on 49, and on exfiltration less on 119 of 257 and more on 48
 (Section~\ref{sec:seeds}).
 
 \subsection{Adversarial training and its limits}
-Adversarial training is the standard defense and has been studied for
-NIDS~\cite{ennaji2024,nids_advtrain2026}. It tends to fit the perturbation type used in training and to
-generalize poorly to unseen attacks. We observe this directly. Hardening against timing jitter cut
+Adversarial training~\cite{madry2018} is the standard defense and has been studied for
+NIDS~\cite{apruzzese2020rf,ennaji2024,nids_advtrain2026}. Tram\`{e}r and Boneh~\cite{tramer2019} showed
+that robustness gained against one perturbation type does not carry over to others and that robustness
+to several types trades off, and Maini et al.~\cite{maini2020} train against the union of several
+perturbation models. Those results concern $L_p$-bounded and spatial perturbations of images. We
+observe the same pattern in the problem space, where each perturbation type is a parameter of the
+attack traffic. Hardening against timing jitter cut
 held-out jitter evasion to 0 of 9 for four of the five learned C2 detectors, and payload-size padding
 then re-broke every one of them on every instance it detected (Section~\ref{sec:defense}). On
 exfiltration, hardened tree ensembles that stopped throttled transfers were evaded again once the
@@ -425,7 +463,8 @@ gradient was verified against finite differences.
 
 \paragraph{Quantum-classical VQC.} A variational quantum classifier implemented in
 PennyLane~\cite{pennylane2018}: an \texttt{AngleEmbedding} of the (PCA-reduced) features onto 8 qubits,
-followed by 4 \texttt{StronglyEntanglingLayers}, reading out one Pauli-$Z$ expectation per class from
+followed by 4 \texttt{StronglyEntanglingLayers}, PennyLane's implementation of the circuit-centric
+classifier layers of Schuld et al.~\cite{schuld2020}, reading out one Pauli-$Z$ expectation per class from
 the first two wires, passed through a softmax and trained with cross-entropy (learning rate 0.05, batch
 size 16, up to 30 epochs, patience 8). Training uses exact gradients via the \texttt{default.qubit}
 state-vector simulator.
@@ -1255,6 +1294,7 @@ with a train/test mismatch. Reporting the naive detection rate next to every eva
 a mismatch, because the naive rate drops.
 
 \subsection{The observation window}
+\label{sec:window}
 Our features are computed over a 60\,s window, while operational beacon hunting often scores a
 destination over hours or days of connection logs~\cite{gardiner2014}. A reviewer may ask whether a
 longer window would recover the signal. For the features we attack, it would not. The evasion raises
@@ -1270,7 +1310,8 @@ limit on which features we tested, not on whether the tested features survive mo
 
 \subsection{Limitations}
 \begin{itemize}
-  \item \emph{Emulated testbed and synthetic benign traffic.} All traffic is generated in Mininet. Our
+  \item \emph{Emulated testbed and synthetic benign traffic.} All traffic is generated in Mininet, a
+        lab-only evaluation in the sense of Arp et al.~\cite{arp2022}. Our
         benign mix is about $3.4\times$ denser in the beacon timing band than the real reference host
         (Section~\ref{sec:testbed}), so our absolute false-positive rates are higher than a deployment
         on that host's traffic would see. The evasion results do not depend on this density.
