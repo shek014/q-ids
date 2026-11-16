@@ -84,6 +84,23 @@ def transfer(src, dst, threshold=THRESHOLD):
     return {"transferred": [k, n], "wilson": wilson(k, n)}
 
 
+def box_score(det, box, idx, detected, threshold=THRESHOLD):
+    """Score a random-box sweep (evasion/sweep.py --box) on instances `idx`. A box sweep has no
+    unmodified point, so `detected` (per instance, aligned with idx) says which instances the detector
+    flags unmodified, taken from the grid floor of the jitter sweep. Over the detected instances it
+    reports the share of functional box points that score P(benign) >= threshold, and the share of
+    instances where at least one point does."""
+    F, got, fn = box["features"][idx], box["got"][idx], box["functional"][idx]
+    P = det.prob_benign_grid(F, got)
+    usable = got & fn & detected[:, None]
+    ev = usable & (P >= threshold)
+    kp, np_ = int(ev.sum()), int(usable.sum())
+    ki, ni = int(ev.any(axis=1).sum()), int(detected.sum())
+    return {"points": [kp, np_], "points_wilson": wilson(kp, np_),
+            "instances": [ki, ni], "instances_wilson": wilson(ki, ni),
+            "P": P, "usable": usable, "theta": box["theta_grid"][idx]}
+
+
 def clean_metrics(det, data_path, split_seed=0, val_size=0.15, test_size=0.15, threshold=THRESHOLD):
     """Accuracy, attack F1, attack recall and benign FPR on the fixed clean test split."""
     X, y, _, class_names = load_dataset(data_path)

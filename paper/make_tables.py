@@ -111,6 +111,36 @@ def c2(out):
             cells.append(f"{line}: {rate(*single['evaded'])} -> {ev_cell(joint)}")
         print(f"{name:16s}acc {cm['accuracy']:.3f} FPR {cm['benign_fpr']:.3f}\n    " + "\n    ".join(cells))
 
+    if (EV / "sweep_box.npz").exists():
+        box_table(out, sw, held, lines)
+
+
+def box_table(out, sw, held, lines, box_path=EV / "sweep_box.npz", box_suffix="_box_hardened"):
+    """Range-wide hardening: every hardening round scored on the three held-out lines and on held-out
+    random-box points (timing and size jitter drawn together)."""
+    box = np.load(box_path)
+    rounds = [("undefended", ""), ("single", "_hardened"), ("joint", "_joint_hardened"),
+              ("box", box_suffix)]
+    print("\n== Range-wide hardening, held-out (evaded/detected per line; box = points, instances)")
+    tb = out.setdefault("c2_box", {})
+    for name, d in C2:
+        print(f"{name}")
+        for rnd, suf in rounds:
+            if not Path(f"results/{d}{suf}").exists():
+                continue
+            det = load(d + suf, C2_DATA)
+            cm = pm.clean_metrics(det, C2_DATA)
+            row = tb.setdefault(d, {})[rnd] = {"clean": cm}
+            cells = []
+            for line, (s, idx) in lines.items():
+                row[line] = pm.summary(pm.score(det, s, idx))
+                cells.append(f"{line} {rate(*row[line]['evaded'])}")
+            detected = pm.score(det, sw, held)["detected"]
+            b = pm.box_score(det, box, held, detected)
+            row["box"] = {k: b[k] for k in ("points", "points_wilson", "instances", "instances_wilson")}
+            cells.append(f"box pts {rate(*b['points'], b['points_wilson'])} inst {b['instances'][0]}/{b['instances'][1]}")
+            print(f"  {rnd:10s} acc {cm['accuracy']:.3f} FPR {cm['benign_fpr']:.3f}  " + "  ".join(cells))
+
 
 def exfil(out):
     clean_table("Table 9: clean exfiltration detection", EX, EX_DATA, out.setdefault("exfil_clean", {}))
