@@ -182,8 +182,12 @@ cython_debug/
 
 # q-ids project data
 # Datasets and captures are generated, not committed — see README > Repository layout.
+# Exception: the three flow datasets the paper's results use are committed so the Zenodo archive has them.
 data/*
 !data/.gitkeep
+!data/dataset.npz
+!data/exfil_dataset.npz
+!data/real_benign.npz
 capture/*
 !capture/.gitkeep
 
