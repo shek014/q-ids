@@ -10,13 +10,18 @@ measured on real traffic rather than on the feature vector, and does a quantum-c
 
 ## Key findings
 
+Six detectors (MLP on all 17 features and on PCA-8, an 8-qubit VQC on PCA-8, Random Forest, XGBoost,
+a single-feature rule), 30 attack instances per family. Evasion counts only attacks a detector caught
+unmodified.
+
 | | C2 beaconing | Data exfiltration |
 |---|---|---|
-| What the detector keys on | timing regularity (`cv_iat`) | throughput (`bytes_per_second`) |
-| Clean accuracy (MLP / VQC) | 0.857 / 0.746 | 0.847 / 0.833 |
-| Evaded after a realizable change | 100% of instances (timing jitter) | 100% of instances (rate throttling) |
-| Quantum robustness advantage | none (VQC equal or easier to evade) | none (VQC easier to evade in 15/15) |
-| Adversarial training | closes the timing axis; the size axis then re-breaks it (100%) | closes the throttle axis for the MLP; VQC stays evadable |
+| What the detectors key on | timing regularity (`cv_iat`) | throughput (`bytes_per_second`) |
+| Clean test accuracy | 0.841–0.857 learned; rule 0.619 | 0.801–0.889 learned; rule 0.880 |
+| Evaded by working traffic | 159 of 160 caught attacks, median timing jitter ±20–30% | 167 of 167, send rate cut 2.5–3×, transfer 3.3 s → 4.9–6.0 s |
+| VQC vs MLP on the same inputs | VQC harder to evade on 9 of 19, easier on 8 | VQC easier to evade on 21 of 21 |
+| Adversarial training on the attacked axis | stops jitter for the MLPs and trees; payload padding then evades every hardened detector | trees stop throttling; a new volume, chunk jitter or chunk size evades them again |
+| Joint timing + size training | jitter 0.3 plus padding still evades every learned detector except the Random Forest (2 of 9) | not run |
 
 Clean accuracy is deliberately *not* 100%: the benign traffic includes services that genuinely
 resemble the attack (regular health checks for C2, large legitimate transfers for exfiltration). An
@@ -32,8 +37,9 @@ detection was made realistic.
 
 Here every candidate is also checked by a **functional oracle**: an evasion only counts if the attack
 still works (the beacon keeps checking in; the full payload still arrives before a deadline).
-Both detectors are trained on **matched inputs** (the same 8 PCA components), so any robustness
-difference comes from the model, not from what it sees.
+The MLP and the VQC are trained on **matched inputs** (the same 8 PCA components), so a robustness
+difference between them comes from the model, not from what it sees. Random Forest, XGBoost and the
+rule use all 17 features and stand in for what a defender would deploy.
 
 ## Pipeline
 
@@ -42,17 +48,26 @@ difference comes from the model, not from what it sees.
   <img alt="q-ids pipeline" src="docs/pipeline-light.svg" width="100%">
 </picture>
 
-1. **Traffic** is generated in an emulated Mininet network (10 Mbit/s links, NIC offloads off) and
-   captured with tcpdump. Labels are exact by construction: each flow is labelled by its sender's role.
+1. **Traffic**: each scenario ([`configs/scenarios/c2.yaml`](configs/scenarios/c2.yaml),
+   [`exfil.yaml`](configs/scenarios/exfil.yaml)) runs 8 Mininet hosts on one Open vSwitch with
+   10 Mbit/s links and NIC offloads off, for 60 s per run, 180 runs per family. tcpdump records on the
+   collector host h1. Each flow is labelled by its sender's role, so labels are exact.
 2. **Features**: packets are grouped into flows keyed by (protocol, source MAC, destination), and 17
    flow statistics are extracted ([`features/dataset.py`](features/dataset.py)).
-3. **Detectors**: a from-scratch NumPy MLP (no ML framework) and a PennyLane VQC (8 qubits, 4
-   entangling layers, `default.qubit` simulator).
-4. **Evasion**: a capture-once sweep over one realizable parameter, scored offline against every
-   detector, so all models are compared on identical traffic. This yields paired comparisons and
+3. **Detectors**: a from-scratch NumPy MLP (no ML framework) on all 17 features and on PCA-8, a
+   PennyLane VQC on PCA-8 (8 qubits, 4 entangling layers, `default.qubit` simulator), and Random
+   Forest, XGBoost and a single-feature threshold rule. All six flag a flow when P(benign) < 0.5.
+4. **Capture-once sweep**: every attack instance is run as real traffic at every point of a parameter
+   grid (C2: timing jitter or payload-size jitter; exfiltration: throttle) inside the full training
+   scenario, and a functional oracle checks each flow: the beacon keeps checking in with no gap over
+   30 s, or the payload reaches the collector within 60 s.
+5. **Offline scoring**: the saved flows are scored against every detector, so all detectors see
+   identical traffic. This gives evasion rates, minimal evading perturbations, paired comparisons and
    transfer rates.
-5. **Defense**: adversarial training on evaded samples, evaluated on held-out instances, then a second
-   realizable parameter is tested against the hardened detector.
+6. **Adversarial training**: evaded flows from 21 instances are added to training and the 9 held-out
+   instances are re-scored. Escalation then sweeps a parameter the hardening never varied (payload
+   size for C2; volume, chunk jitter or chunk size for exfiltration). For C2, a second round hardens on
+   timing and size together and is tested on combinations of the two.
 
 ## Repository layout
 
@@ -67,8 +82,9 @@ q-ids/
 ├── evasion/       query primitive, functional oracles, sweeps, transfer, hardening
 ├── configs/       model configs and scenario configs (c2.yaml, exfil.yaml)
 ├── data/          flow datasets used by the paper (dataset, exfil_dataset, real_benign .npz)
-├── results/       model metadata and evasion results (JSON/NPZ)
-└── paper/         LaTeX source, figure script, section drafts
+├── results/       trained detectors (clean, hardened, jointly hardened), sweeps and evaluation JSON
+├── paper/         LaTeX source, figure and realism-check scripts, section drafts
+└── docs/          README pipeline diagram and its generator (make_pipeline_diagram.py, mingrammer diagrams)
 ```
 
 `configs/scenarios/{synflood,recon,spoof,mixed,benign}.yaml` and `traffic/attack/` belong to an
@@ -101,29 +117,96 @@ sudo systemctl start ovsdb-server ovs-vswitchd
 
 ## Reproducing the results
 
-```bash
-# 1. collect a dataset (Linux, root) and extract features
-sudo python3 -m topology.run --scenario configs/scenarios/c2.yaml --out capture/c2 --runs 60
-python -m features.extract --pcap-dir capture/c2 --out data/dataset.npz
+Every artifact the paper uses is committed: the flow datasets in `data/`, and the trained detectors and
+sweeps in `results/`. The steps below regenerate them. Steps marked *root* capture traffic in Mininet;
+everything else runs offline in the venv. Root-run steps leave `results/` and `capture/` owned by root,
+so run `sudo chown -R $USER results capture data` before the offline steps. The blocks use bash; in
+zsh, expand the option variables as `${=G}`.
 
-# 2. train the detectors (native MLP, matched MLP, VQC) and compare
+### C2 beaconing
+
+```bash
+# 1. datasets (root): 60 runs at seed 0 and 120 at seed 1, extracted and concatenated in that order
+sudo python3 -m topology.run --scenario configs/scenarios/c2.yaml --out capture/c2   --runs 60
+sudo python3 -m topology.run --scenario configs/scenarios/c2.yaml --out capture/c2_b --runs 120 --seed 1
+python -m features.extract --pcap-dir capture/c2   --out data/dataset_60runs.npz
+python -m features.extract --pcap-dir capture/c2_b --out data/c2_b.npz
+python -c "import numpy as np; a,b=np.load('data/dataset_60runs.npz'),np.load('data/c2_b.npz'); np.savez('data/dataset.npz', X=np.vstack([a['X'],b['X']]), y=np.concatenate([a['y'],b['y']]), feature_names=a['feature_names'], class_names=a['class_names'])"
+
+# 2. detectors (the rule defaults to cv_iat for C2)
 python -m models.classical.train --data data/dataset.npz --out results/classical_native
 python -m models.classical.train --data data/dataset.npz --out results/classical_matched --pca-components 8
 python -m models.quantum.train   --data data/dataset.npz --out results/quantum
+python -m models.baselines.train --kind rf        --out results/rf
+python -m models.baselines.train --kind xgb       --out results/xgb
+python -m models.baselines.train --kind threshold --out results/threshold
 python -m evaluation.compare --out results/comparison
 
-# 3. capture-once sweep (root), then offline scoring, hardening and held-out evaluation
-sudo .venv/bin/python -m evasion.sweep --seeds 15 --out results/evasion/sweep.npz
-python -m evasion.transfer --sweep results/evasion/sweep.npz
-python -m evasion.harden --sweep results/evasion/sweep.npz --adv-seeds 0-9
-python -m evasion.harden_eval --sweep results/evasion/sweep.npz --heldout 10-14
+# 3. capture-once sweeps (root): 3 intervals x 10 seeds, in the full training scenario
+G="--intervals 2,4,8 --seeds-per-config 10"
+S="--values 0,0.05,0.1,0.15,0.2,0.3,0.4,0.6"
+sudo .venv/bin/python -m evasion.sweep $G --jitters 0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.4,0.5,0.8 --out results/evasion/sweep.npz
+sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.5 $S --out results/evasion/sweep_sizeaxis_full.npz
+sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.5 $S --only-heldout --out results/evasion/sweep_sizeaxis.npz
+sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.3 $S --only-heldout --out results/evasion/sweep_combined_heldout.npz
 
-# 4. figures (then copy the PDFs into paper/tex/figures/)
-python paper/make_figures.py
+# 4. offline scoring, single-axis hardening, joint hardening
+python -m evasion.transfer                                   # native MLP vs VQC -> transfer.json
+for b in rf xgb threshold; do
+  python -m evasion.transfer --quantum results/$b --out results/evasion/transfer_mlp_vs_$b.json
+done
+python -m evasion.harden                                     # -> results/*_hardened
+python -m evasion.harden_eval --out results/evasion/harden_eval.json
+python -m evasion.joint_harden                               # -> results/*_joint_hardened
+python -m evasion.joint_eval                                 # -> results/evasion/joint_harden_eval.json
 ```
 
-The exfiltration study mirrors these steps with `configs/scenarios/exfil.yaml`,
-`features.extract --classes benign,exfil`, and the `evasion/exfil_*` modules.
+### Data exfiltration
+
+```bash
+# 1. datasets (root), same layout as C2
+sudo python3 -m topology.run --scenario configs/scenarios/exfil.yaml --out capture/exfil   --runs 60
+sudo python3 -m topology.run --scenario configs/scenarios/exfil.yaml --out capture/exfil_b --runs 120 --seed 1
+python -m features.extract --pcap-dir capture/exfil   --out data/exfil_dataset_60runs.npz --classes benign,exfil
+python -m features.extract --pcap-dir capture/exfil_b --out data/exfil_b.npz              --classes benign,exfil
+# concatenate exfil_dataset_60runs + exfil_b into data/exfil_dataset.npz as in C2 step 1
+
+# 2. detectors: as C2 step 2 with --data data/exfil_dataset.npz and --out results/exfil_<name>
+#    (the rule defaults to bytes_per_second for exfiltration)
+
+# 3. throttle sweep and escalation sweeps (root)
+sudo .venv/bin/python -m evasion.exfil_sweep --volumes 800000,1150000,1500000 --seeds-per-config 10 \
+  --throttles 0,0.5,1,1.5,2,2.5,3,5,8,12 --out results/evasion/exfil_sweep.npz
+E="--volumes 950000,1300000 --seeds-per-config 3 --throttles 0,2,3,5,8,12"
+sudo .venv/bin/python -m evasion.exfil_sweep $E                    --out results/evasion/exfil_esc_volume.npz
+sudo .venv/bin/python -m evasion.exfil_sweep $E --jitter 0.3       --out results/evasion/exfil_esc_jitter.npz
+sudo .venv/bin/python -m evasion.exfil_sweep $E --chunk-size 8192  --out results/evasion/exfil_esc_chunk.npz
+
+# 4. offline scoring and hardening
+python -m evasion.exfil_transfer
+python -m evasion.exfil_harden                               # -> results/exfil_*_hardened
+python -m evasion.exfil_harden_eval --out results/evasion/exfil_harden_eval.json
+```
+
+### Realism check and figures
+
+`data/real_benign.npz` comes from the public
+[CTU-Normal-29](https://mcfp.felk.cvut.cz/publicDatasets/CTU-Normal-29/) capture: the host's outbound
+packets, cut into 60 s windows and run through the same feature extraction.
+
+```bash
+tcpdump -r 2017-05-01_normal.pcap -w out.pcap 'src host 10.0.2.15'
+mkdir -p win && editcap -i 60 out.pcap win/w.pcap
+python -m features.extract --pcap-dir win --out data/real_benign.npz
+
+python paper/realism_check.py                # -> paper/figures/fig6_realism.pdf
+python paper/make_figures.py                 # -> paper/figures/fig1-fig5
+cp paper/figures/*.pdf paper/tex/figures/
+```
+
+The JSON summaries written above count every attack instance. The paper's tables count only instances
+a detector flagged unmodified and add Wilson intervals; no script in this repository produces those
+tables yet.
 
 ## Non-goals
 
