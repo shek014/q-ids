@@ -1,0 +1,2 @@
+# Only for docs/make_pipeline_diagram.py (the README pipeline diagram); also needs Graphviz `dot`.
+diagrams==0.25.1
