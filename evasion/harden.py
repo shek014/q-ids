@@ -122,16 +122,17 @@ def train_vqc(splits, cfg, class_names, out):
     return acc, fpr
 
 
-def train_baselines(aug, args, class_names, prefix):
-    """Retrain RF / XGBoost / threshold on the augmented set into results/<prefix><kind>_hardened.
-    Yields (name, (acc, fpr)). Skipped with --no-baselines."""
+def train_baselines(aug, args, class_names, prefix, suffix="hardened"):
+    """Retrain RF / XGBoost / threshold on the augmented set into results/<prefix><kind>_<suffix>.
+    Yields (name, (acc, fpr)). Skipped with --no-baselines. `suffix` lets a second defense round
+    (e.g. joint timing+size hardening) write to a distinct set of dirs without clobbering the first."""
     if args.no_baselines:
         return []
     from models.baselines.train import fit_baseline
     bcfg = yaml.safe_load(open(args.baselines_config))
     out = []
     for kind, short in [("random_forest", "rf"), ("xgboost", "xgb"), ("threshold", "threshold")]:
-        name = f"{prefix}{short}_hardened"
+        name = f"{prefix}{short}_{suffix}"
         res = fit_baseline(kind, aug, bcfg, class_names, Path(f"results/{name}"),
                            extra_meta={"adversarially_trained": True})
         out.append((name, res))
