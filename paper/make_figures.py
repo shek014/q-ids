@@ -197,9 +197,46 @@ def fig_decision_space():
     save(fig, "fig4_decision_space")
 
 
+def fig_operating_point():
+    """Fig 7: share of attack instances that get through vs the benign false-positive rate the defender
+    accepts, per detector, from results/evasion/operating_point.json (evasion/operating_point.py)."""
+    import json
+    op = json.load(open("results/evasion/operating_point.json"))
+    cur = op["curves"]
+    # shaded band: the learned detectors' benign FPR at the default threshold, per family
+    band = {fam: [min(v["operating_points"]["default"]["test_fpr"] for k, v in op["results"][fam].items()
+                      if "threshold" not in k),
+                  max(v["operating_points"]["default"]["test_fpr"] for k, v in op["results"][fam].items()
+                      if "threshold" not in k)] for fam in op["results"]}
+    style = {  # Okabe-Ito, validated with the dataviz palette checks; markers carry identity too
+        "MLP (native)": ("#0072B2", "o"), "MLP (matched)": ("#56B4E9", "s"), "VQC": ("#D55E00", "^"),
+        "Random Forest": ("#009E73", "D"), "XGBoost": ("#E69F00", "v"), "Rule": ("#CC79A7", "x")}
+    panels = [("c2", "jitter", "C2: timing jitter"), ("c2", "jitter_or_padding", "C2: jitter or padding"),
+              ("exfil", "throttle", "Exfiltration: throttle")]
+    fig, axes = plt.subplots(1, 3, figsize=(7.2, 2.6), sharey=True)
+    for ax, (fam, attack, title) in zip(axes, panels):
+        for d, rec in cur[fam].items():
+            color, marker = style[rec["label"]]
+            pts = sorted(rec["points"], key=lambda p: p["test_fpr"])
+            x = [p["test_fpr"] for p in pts]
+            y = [p[attack] for p in pts]
+            ax.plot(x, y, color=color, lw=1.4, marker=marker, ms=3.2, markevery=3, label=rec["label"])
+        ax.axvspan(*band[fam], color="#E6E6E6", lw=0, zorder=0)
+        ax.set_title(title)
+        ax.set_xlim(0, 0.6)
+        ax.set_ylim(-0.03, 1.03)
+        ax.set_xlabel("Benign false-positive rate")
+    axes[0].set_ylabel("Attacks that get through")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=6, frameon=False, bbox_to_anchor=(0.5, -0.08))
+    fig.tight_layout()
+    save(fig, "fig7_operating_point")
+
+
 if __name__ == "__main__":
     fig_evasion_curve()
     fig_exfil_curve()
     fig_arms_race()
     fig_feature_overlap()
     fig_decision_space()
+    fig_operating_point()
