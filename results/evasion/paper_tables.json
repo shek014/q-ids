@@ -1610,6 +1610,2264 @@
    }
   }
  },
+ "c2_box": {
+  "classical_native": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8518518518518519,
+     "f1": 0.7741935483870968,
+     "recall": 0.8888888888888888,
+     "benign_fpr": 0.16296296296296298
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.25,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.4,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      2,
+      9
+     ],
+     "evaded": [
+      2,
+      2
+     ],
+     "wilson": [
+      0.3423719528896193,
+      1.0
+     ],
+     "bracket": [
+      0.0,
+      0.05
+     ],
+     "median_min": 0.05,
+     "max_min": 0.05,
+     "median_queries": 2.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      67,
+      72
+     ],
+     "points_wilson": [
+      0.847518240672898,
+      0.9699750611561772
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8465608465608465,
+     "f1": 0.768,
+     "recall": 0.8888888888888888,
+     "benign_fpr": 0.17037037037037037
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.05,
+      0.1
+     ],
+     "median_min": 0.1,
+     "max_min": 0.15,
+     "median_queries": 3.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.05,
+      0.1
+     ],
+     "median_min": 0.1,
+     "max_min": 0.15,
+     "median_queries": 3.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      59,
+      72
+     ],
+     "points_wilson": [
+      0.7151944298987886,
+      0.8913328585550414
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8359788359788359,
+     "f1": 0.752,
+     "recall": 0.8703703703703703,
+     "benign_fpr": 0.17777777777777778
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.5,
+      0.8
+     ],
+     "median_min": 0.8,
+     "max_min": 0.8,
+     "median_queries": 10.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      7,
+      9
+     ],
+     "wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.2,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.6,
+     "median_queries": 6.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      32,
+      72
+     ],
+     "points_wilson": [
+      0.33538885104705246,
+      0.5591281422653249
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8253968253968254,
+     "f1": 0.7401574803149606,
+     "recall": 0.8703703703703703,
+     "benign_fpr": 0.1925925925925926
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.5,
+      0.8
+     ],
+     "median_min": 0.8,
+     "max_min": 0.8,
+     "median_queries": 10.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      6,
+      9
+     ],
+     "wilson": [
+      0.35419734749908977,
+      0.8794184013172571
+     ],
+     "bracket": [
+      0.25,
+      0.35
+     ],
+     "median_min": 0.35,
+     "max_min": 0.6,
+     "median_queries": 6.5,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      4,
+      9
+     ],
+     "wilson": [
+      0.188775429471914,
+      0.7333526542559703
+     ],
+     "bracket": [
+      0.1,
+      0.15000000000000002
+     ],
+     "median_min": 0.15000000000000002,
+     "max_min": 0.2,
+     "median_queries": 4.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      13,
+      72
+     ],
+     "points_wilson": [
+      0.10866714144495851,
+      0.2848055701012114
+     ],
+     "instances": [
+      7,
+      9
+     ],
+     "instances_wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ]
+    }
+   }
+  },
+  "classical_matched": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8571428571428571,
+     "f1": 0.7938931297709924,
+     "recall": 0.9629629629629629,
+     "benign_fpr": 0.18518518518518517
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.25,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.4,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      3,
+      9
+     ],
+     "evaded": [
+      3,
+      3
+     ],
+     "wilson": [
+      0.4384939195509822,
+      1.0
+     ],
+     "bracket": [
+      0.0,
+      0.05
+     ],
+     "median_min": 0.05,
+     "max_min": 0.05,
+     "median_queries": 2.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      65,
+      72
+     ],
+     "points_wilson": [
+      0.812647509746432,
+      0.952104288738832
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8359788359788359,
+     "f1": 0.743801652892562,
+     "recall": 0.8333333333333334,
+     "benign_fpr": 0.16296296296296298
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.05,
+      0.1
+     ],
+     "median_min": 0.1,
+     "max_min": 0.3,
+     "median_queries": 3.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.05,
+      0.1
+     ],
+     "median_min": 0.1,
+     "max_min": 0.15,
+     "median_queries": 3.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      57,
+      72
+     ],
+     "points_wilson": [
+      0.6843051941004199,
+      0.8694805910095988
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8359788359788359,
+     "f1": 0.7350427350427351,
+     "recall": 0.7962962962962963,
+     "benign_fpr": 0.14814814814814814
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.5,
+      0.8
+     ],
+     "median_min": 0.8,
+     "max_min": 0.8,
+     "median_queries": 10.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      7,
+      9
+     ],
+     "wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ],
+     "bracket": [
+      0.3,
+      0.4
+     ],
+     "median_min": 0.4,
+     "max_min": 0.6,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.1,
+      0.15
+     ],
+     "median_min": 0.15,
+     "max_min": 0.4,
+     "median_queries": 4.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      36,
+      72
+     ],
+     "points_wilson": [
+      0.38746896004724257,
+      0.6125310399527575
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8412698412698413,
+     "f1": 0.7727272727272727,
+     "recall": 0.9444444444444444,
+     "benign_fpr": 0.2
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      8,
+      9
+     ],
+     "wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ],
+     "bracket": [
+      0.3,
+      0.4
+     ],
+     "median_min": 0.4,
+     "max_min": 0.6,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.3,
+      0.4
+     ],
+     "median_min": 0.4,
+     "max_min": 0.6,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      27,
+      72
+     ],
+     "points_wilson": [
+      0.2721900939935457,
+      0.49047314095930344
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   }
+  },
+  "quantum": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8412698412698413,
+     "f1": 0.7580645161290323,
+     "recall": 0.8703703703703703,
+     "benign_fpr": 0.17037037037037037
+    },
+    "timing": {
+     "naive_detected": [
+      6,
+      9
+     ],
+     "evaded": [
+      6,
+      6
+     ],
+     "wilson": [
+      0.6096569663469354,
+      1.0
+     ],
+     "bracket": [
+      0.275,
+      0.35
+     ],
+     "median_min": 0.35,
+     "max_min": 0.5,
+     "median_queries": 7.5,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      3,
+      9
+     ],
+     "evaded": [
+      3,
+      3
+     ],
+     "wilson": [
+      0.4384939195509822,
+      1.0
+     ],
+     "bracket": [
+      0.3,
+      0.4
+     ],
+     "median_min": 0.4,
+     "max_min": 0.4,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      36,
+      48
+     ],
+     "points_wilson": [
+      0.6121535625207292,
+      0.8507951119028997
+     ],
+     "instances": [
+      6,
+      6
+     ],
+     "instances_wilson": [
+      0.6096569663469354,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8148148148148148,
+     "f1": 0.75177304964539,
+     "recall": 0.9814814814814815,
+     "benign_fpr": 0.2518518518518518
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      6,
+      9
+     ],
+     "wilson": [
+      0.35419734749908977,
+      0.8794184013172571
+     ],
+     "bracket": [
+      0.35,
+      0.45
+     ],
+     "median_min": 0.45,
+     "max_min": 0.8,
+     "median_queries": 8.5,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      5,
+      9
+     ],
+     "evaded": [
+      5,
+      5
+     ],
+     "wilson": [
+      0.565508505247919,
+      1.0000000000000002
+     ],
+     "bracket": [
+      0.2,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.4,
+     "median_queries": 6.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.2,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.4,
+     "median_queries": 6.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      46,
+      72
+     ],
+     "points_wilson": [
+      0.5235226614759323,
+      0.7401848552431242
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8042328042328042,
+     "f1": 0.7448275862068966,
+     "recall": 1.0,
+     "benign_fpr": 0.2740740740740741
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      7,
+      9
+     ],
+     "wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      8,
+      9
+     ],
+     "wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      10,
+      72
+     ],
+     "points_wilson": [
+      0.077226478114719,
+      0.23713397841573394
+     ],
+     "instances": [
+      8,
+      9
+     ],
+     "instances_wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.7936507936507936,
+     "f1": 0.7346938775510204,
+     "recall": 1.0,
+     "benign_fpr": 0.28888888888888886
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      8,
+      9
+     ],
+     "wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      7,
+      9
+     ],
+     "wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ],
+     "bracket": [
+      0.3,
+      0.4
+     ],
+     "median_min": 0.4,
+     "max_min": 0.6,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      17,
+      72
+     ],
+     "points_wilson": [
+      0.15296584625945536,
+      0.34598987197433717
+     ],
+     "instances": [
+      7,
+      9
+     ],
+     "instances_wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ]
+    }
+   }
+  },
+  "rf": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8412698412698413,
+     "f1": 0.765625,
+     "recall": 0.9074074074074074,
+     "benign_fpr": 0.18518518518518517
+    },
+    "timing": {
+     "naive_detected": [
+      6,
+      9
+     ],
+     "evaded": [
+      6,
+      6
+     ],
+     "wilson": [
+      0.6096569663469354,
+      1.0
+     ],
+     "bracket": [
+      0.175,
+      0.225
+     ],
+     "median_min": 0.225,
+     "max_min": 0.3,
+     "median_queries": 5.5,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      43,
+      48
+     ],
+     "points_wilson": [
+      0.7783231187385907,
+      0.9546789490988217
+     ],
+     "instances": [
+      6,
+      6
+     ],
+     "instances_wilson": [
+      0.6096569663469354,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8518518518518519,
+     "f1": 0.7666666666666667,
+     "recall": 0.8518518518518519,
+     "benign_fpr": 0.14814814814814814
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.1,
+      0.15
+     ],
+     "median_min": 0.15,
+     "max_min": 0.2,
+     "median_queries": 4.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.1,
+      0.15
+     ],
+     "median_min": 0.15,
+     "max_min": 0.2,
+     "median_queries": 4.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      56,
+      72
+     ],
+     "points_wilson": [
+      0.6690882726433144,
+      0.8583267607947987
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8306878306878307,
+     "f1": 0.7377049180327869,
+     "recall": 0.8333333333333334,
+     "benign_fpr": 0.17037037037037037
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      2,
+      9
+     ],
+     "wilson": [
+      0.0632237623122272,
+      0.5474166563271946
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      2,
+      72
+     ],
+     "points_wilson": [
+      0.007650861466140469,
+      0.09574358168906721
+     ],
+     "instances": [
+      2,
+      9
+     ],
+     "instances_wilson": [
+      0.0632237623122272,
+      0.5474166563271946
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8306878306878307,
+     "f1": 0.7419354838709677,
+     "recall": 0.8518518518518519,
+     "benign_fpr": 0.17777777777777778
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      1,
+      72
+     ],
+     "points_wilson": [
+      0.0024558886404321668,
+      0.07456780284286987
+     ],
+     "instances": [
+      1,
+      9
+     ],
+     "instances_wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ]
+    }
+   }
+  },
+  "xgb": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8518518518518519,
+     "f1": 0.7846153846153846,
+     "recall": 0.9444444444444444,
+     "benign_fpr": 0.18518518518518517
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.2,
+      0.25
+     ],
+     "median_min": 0.25,
+     "max_min": 0.3,
+     "median_queries": 6.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      67,
+      72
+     ],
+     "points_wilson": [
+      0.847518240672898,
+      0.9699750611561772
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8412698412698413,
+     "f1": 0.7580645161290323,
+     "recall": 0.8703703703703703,
+     "benign_fpr": 0.17037037037037037
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.0,
+      0.05
+     ],
+     "median_min": 0.05,
+     "max_min": 0.05,
+     "median_queries": 2.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.0,
+      0.05
+     ],
+     "median_min": 0.05,
+     "max_min": 0.05,
+     "median_queries": 2.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      67,
+      72
+     ],
+     "points_wilson": [
+      0.847518240672898,
+      0.9699750611561772
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8306878306878307,
+     "f1": 0.7288135593220338,
+     "recall": 0.7962962962962963,
+     "benign_fpr": 0.15555555555555556
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      7,
+      9
+     ],
+     "wilson": [
+      0.4525833436728054,
+      0.9367762376877727
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      5,
+      72
+     ],
+     "points_wilson": [
+      0.03002493884382272,
+      0.15248175932710192
+     ],
+     "instances": [
+      3,
+      9
+     ],
+     "instances_wilson": [
+      0.12058159868274292,
+      0.6458026525009103
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.8306878306878307,
+     "f1": 0.7288135593220338,
+     "recall": 0.7962962962962963,
+     "benign_fpr": 0.15555555555555556
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      1,
+      9
+     ],
+     "wilson": [
+      0.019890371327130518,
+      0.4350062147680602
+     ],
+     "bracket": [
+      0.4,
+      0.6
+     ],
+     "median_min": 0.6,
+     "max_min": 0.6,
+     "median_queries": 8.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      0,
+      72
+     ],
+     "points_wilson": [
+      0.0,
+      0.05065293981139638
+     ],
+     "instances": [
+      0,
+      9
+     ],
+     "instances_wilson": [
+      0.0,
+      0.2991527535509594
+     ]
+    }
+   }
+  },
+  "threshold": {
+   "undefended": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.6190476190476191,
+     "f1": 0.5909090909090909,
+     "recall": 0.9629629629629629,
+     "benign_fpr": 0.5185185185185185
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.2,
+      0.25
+     ],
+     "median_min": 0.25,
+     "max_min": 0.3,
+     "median_queries": 6.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      51,
+      72
+     ],
+     "points_wilson": [
+      0.594940392251052,
+      0.800620882827533
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "single": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.6190476190476191,
+     "f1": 0.6,
+     "recall": 1.0,
+     "benign_fpr": 0.5333333333333333
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.25,
+      0.3
+     ],
+     "median_min": 0.3,
+     "max_min": 0.4,
+     "median_queries": 7.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      0,
+      9
+     ],
+     "evaded": [
+      0,
+      0
+     ],
+     "wilson": [
+      NaN,
+      NaN
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      4,
+      9
+     ],
+     "evaded": [
+      0,
+      4
+     ],
+     "wilson": [
+      0.0,
+      0.48990002040399916
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      43,
+      72
+     ],
+     "points_wilson": [
+      0.4818046137128726,
+      0.702790647990467
+     ],
+     "instances": [
+      9,
+      9
+     ],
+     "instances_wilson": [
+      0.7008472464490406,
+      1.0
+     ]
+    }
+   },
+   "joint": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.5185185185185185,
+     "f1": 0.542713567839196,
+     "recall": 1.0,
+     "benign_fpr": 0.674074074074074
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.5,
+      0.8
+     ],
+     "median_min": 0.8,
+     "max_min": 0.8,
+     "median_queries": 10.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      11,
+      72
+     ],
+     "points_wilson": [
+      0.0875061903477544,
+      0.25322501785460416
+     ],
+     "instances": [
+      8,
+      9
+     ],
+     "instances_wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ]
+    }
+   },
+   "box": {
+    "clean": {
+     "n_test": 189,
+     "n_attack": 54,
+     "accuracy": 0.5238095238095238,
+     "f1": 0.5454545454545454,
+     "recall": 1.0,
+     "benign_fpr": 0.6666666666666666
+    },
+    "timing": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      9,
+      9
+     ],
+     "wilson": [
+      0.7008472464490406,
+      1.0
+     ],
+     "bracket": [
+      0.5,
+      0.8
+     ],
+     "median_min": 0.8,
+     "max_min": 0.8,
+     "median_queries": 10.0,
+     "n_above": null,
+     "median_time": null
+    },
+    "size": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "combined": {
+     "naive_detected": [
+      9,
+      9
+     ],
+     "evaded": [
+      0,
+      9
+     ],
+     "wilson": [
+      0.0,
+      0.2991527535509594
+     ],
+     "bracket": null,
+     "median_min": null,
+     "max_min": null,
+     "median_queries": null,
+     "n_above": null,
+     "median_time": null
+    },
+    "box": {
+     "points": [
+      14,
+      72
+     ],
+     "points_wilson": [
+      0.11951371043417634,
+      0.3003297527838992
+     ],
+     "instances": [
+      8,
+      9
+     ],
+     "instances_wilson": [
+      0.5649937852319398,
+      0.9801096286728695
+     ]
+    }
+   }
+  }
+ },
  "exfil_clean": {
   "exfil_classical_native": {
    "n_test": 216,
