@@ -39,27 +39,24 @@ Command-and-Control Beaconing and Data Exfiltration}
 \cortext[cor1]{Corresponding author.}
 
 \begin{abstract}
-Adversarial evasion of machine-learning network intrusion detectors is mostly demonstrated in
-\emph{feature space}, by perturbing flow feature vectors that may correspond to no traffic an attacker
-could send. We instead measure \emph{problem-space} evasion: every candidate perturbation is generated
-as real traffic in an emulated network, re-featurized, and admitted only if a functional oracle confirms
-the attack still works. We study two attack families whose detectable signal is a parameter the attacker
-sets: command-and-control (C2) beaconing, detected by timing regularity, and data exfiltration, detected
-by throughput. The six detectors are a from-scratch neural network on two input sets, an 8-qubit
-variational quantum classifier on matched inputs, Random Forest, XGBoost, and a single-feature rule. Of
-327 cases in which a detector flagged the unmodified attack, 326 were then evaded by working traffic:
-C2 beacons by randomizing check-in timing by a median of $\pm$20--30\%, exfiltration by slowing the
-transfer from about 3\,s to 6\,s against a 60\,s deadline. Over ten training seeds, the quantum
-classifier had the lowest clean accuracy of the learned detectors in 19 of 20 runs and was easier to
-evade than its matched classical counterpart in 8 of 10 seeds on each family. Adversarial training
-closes the attacked axis only for the configuration
-it was shown: payload-size padding re-breaks every hardened C2 detector, and changing the transfer
-volume, chunk timing or chunk size restores evasion against hardened tree ensembles that had resisted
-throttling. Hardening on timing and payload size together cuts jitter evasion to at most 2 of 9
-held-out beacons for the classical detectors, but a beacon combining $\pm$30\% jitter with padding still
-evades the jointly hardened MLPs and VQC on 6 to 9 of 9 in every seed and XGBoost on 2 to 7; only the
-Random Forest holds (2 of 9). In a public capture of a normal
-host, 12.3\% of benign flows are as regular as our C2 beacons, against 41.9\% in our synthetic mix.
+Evasion of machine-learning network intrusion detectors is mostly shown in \emph{feature space}, on
+flow vectors that may match no traffic an attacker could send. We measure \emph{problem-space}
+evasion: every perturbation is sent as real traffic in an emulated network and counted only if a functional
+oracle confirms the attack still works. In both attack families the attacker
+sets the detected signal: timing regularity for command-and-control (C2) beaconing, throughput for data
+exfiltration. The six detectors are a neural network on two input sets, an
+8-qubit variational quantum classifier, Random Forest, XGBoost and a single-feature rule. Of 327 cases
+in which a detector flagged the unmodified attack, 326 were evaded by working traffic: beacons by a
+median $\pm$20--30\% check-in jitter, exfiltration by slowing a 3\,s transfer to about 6\,s against a
+60\,s deadline. Over ten training seeds, the quantum classifier had the lowest clean accuracy in 19 of
+20 runs and was easier to evade than its matched classical counterpart in 8 of 10 seeds per family.
+Adversarial training holds only for the configuration it was shown: payload padding re-breaks every
+hardened C2 detector, and new transfer volumes or chunking re-break hardened tree ensembles.
+Joint timing and size hardening still leaves their combination open for every learned detector except
+the Random Forest. Moving the threshold stops jittered beacons for the tree ensembles
+at a 23--24\% benign false-positive rate, but stopping padded beacons or throttled exfiltration takes
+34--49\%. In a public normal-host capture, 12.3\% of benign flows are as regular as our beacons (41.9\%
+in our synthetic mix).
 \end{abstract}
 
 \begin{keyword}
@@ -568,8 +565,8 @@ We sweep three intervals ($2$, $4$, $8$\,s) with ten seeds each, $n=30$ instance
 \paragraph{Detected-only scoring.} An instance counts toward a detector's evasion rate only if that
 detector flagged the unmodified attack (the grid floor, e.g.\ jitter $0$). A detector that calls the
 naive attack benign has failed at detection, not been evaded, so we report its naive detection rate
-next to every evasion rate. All six detectors were evaded on 159 of their 160 detected C2 instances at
-the default $\tau=0.5$, so we do not also compare detectors at a matched false-positive rate. Along the
+next to every evasion rate. The detailed results use the default $\tau=0.5$;
+Section~\ref{sec:op} moves $\tau$ to compare detectors at matched false-positive rates. Along the
 jitter axis we report the minimal evading perturbation as a bracket $(j_{-},\,j_{+}]$: the largest grid
 value that did not evade and the smallest that did. We search the timing-jitter axis first
 (Section~\ref{sec:jitter}) and the payload-size-jitter axis against hardened detectors
@@ -1099,6 +1096,42 @@ Throughput rule & 6/6\,{\scriptsize[0.61, 1.00]}, 16.9\,s & 6/6\,{\scriptsize[0.
 \end{tabular}
 \end{table}
 
+\subsection{Matched false-positive rates}
+\label{sec:op}
+Every result above uses $\tau=0.5$, at which the learned detectors flag 16--19\% of benign C2 test flows
+and 14--19\% of benign exfiltration test flows. A defender can flag more. For each detector we set
+$\tau$ on the validation split so that a target fraction of benign validation flows is flagged, sweep the
+target from 0 to 60\%, and rescore the saved sweeps. An attack instance gets through if any functional
+flow the attacker can send scores $P(\text{benign})\ge\tau$; an instance the detector misses unmodified
+gets through at no cost. Fig.~\ref{fig:op} plots the share of the 30 instances that get through against
+the benign FPR reached on the test split.
+
+On C2 the threshold separates the tree ensembles from the other detectors. At a benign FPR of 23--24\%,
+about 5 points above the default, no beacon gets past the Random Forest or XGBoost by timing jitter
+alone, up to the grid top of $\pm$80\%. Jitter leaves the payload size fixed, and padding it, the
+second free parameter, restores evasion: at a benign FPR of 25\% or below, beacons that may also pad
+their payload get past the Random Forest in 26 of 30 instances and past XGBoost in 29. The Random Forest
+stops padded beacons only at a 34\% FPR, and XGBoost still lets 14 of 30 through at 40\%. At 40\% FPR the
+MLPs let 11 to 17 of 30 beacons through, at jitter up to $0.8$, and the VQC 28 to 29. The \texttt{cv\_iat} rule
+lets every beacon through at every threshold up to 60\% FPR, because jittered beacons and loose benign
+polling have the same \texttt{cv\_iat}.
+
+On exfiltration, the MLPs, XGBoost and the throughput rule let at most 3 of 30 throttled transfers
+through only from a benign FPR of 44--49\%. The VQC lets every transfer through at every threshold tested.
+The Random Forest's scores are coarse enough that it cannot be set above a 25\% FPR, where 21 of 30
+transfers get through.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig7_operating_point.pdf}
+\caption{Share of the 30 attack instances that get through as each detector's threshold is moved,
+against the benign false-positive rate on the clean test split. Left: C2 beacons that may vary timing
+jitter up to $0.8$. Middle: C2 beacons that may also pad the payload (size jitter up to $0.6$ at timing
+jitter $0.5$). Right: exfiltration throttled up to $c=12$. Grey band: the learned detectors' benign FPR at
+the default $\tau=0.5$.}
+\label{fig:op}
+\end{figure}
+
 \subsection{Variation across training seeds}
 \label{sec:seeds}
 Table~\ref{tab:seeds} repeats the main measurements over model seeds 0 to 9
@@ -1159,8 +1192,10 @@ the learned decision reduces to the one quantity throttling changes. C2 detectio
 feature, since the \texttt{cv\_iat} rule alone flags 52\% of benign flows, and one attacker-controlled
 parameter still defeats it.
 
-A defender cannot fix this by tightening the threshold, because benign traffic has the same shape.
-In the public capture, about one benign flow in eight is as regular as a beacon. Where hardening pushed
+Tightening the threshold buys detection with false positives (Section~\ref{sec:op}). Stopping jittered
+beacons cost the tree ensembles about 5 points of benign FPR, but stopping beacons that also pad their
+payload cost the Random Forest a 34\% FPR, and stopping throttled exfiltration cost the MLPs, XGBoost and
+the rule 44--49\%. The cost is high because benign traffic has the same shape. In the public capture, about one benign flow in eight is as regular as a beacon. Where hardening pushed
 the decision boundary into that region, false positives rose: the VQC's from 0.17 to 0.25 on C2 and
 to 0.27 after joint hardening, the \texttt{cv\_iat} rule's to 0.67 after joint hardening, and the
 throughput rule's from 0.16 to 0.27 on exfiltration. Against an attacker who adapts, a detector
