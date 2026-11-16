@@ -151,6 +151,8 @@ sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.5 
 sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.5 $S --only-heldout --out results/evasion/sweep_sizeaxis.npz
 sudo .venv/bin/python -m evasion.sweep $G --axis size_jitter --fixed-jitter 0.3 $S --only-heldout --out results/evasion/sweep_combined_heldout.npz
 sudo .venv/bin/python -m evasion.sweep $G --box 8 --out results/evasion/sweep_box.npz   # 8 random (jitter, size) points per instance
+sudo .venv/bin/python -m evasion.sweep $G --only-heldout --box 8 --box-jitter 0.8,2.0 --box-size 0,1.0 --box-seed 1 --out results/evasion/sweep_outside_jitter.npz
+sudo .venv/bin/python -m evasion.sweep $G --only-heldout --box 8 --box-jitter 0,0.8 --box-size 0.6,1.0 --box-seed 2 --out results/evasion/sweep_outside_size.npz
 
 # 4. offline scoring, single-axis hardening, joint hardening
 python -m evasion.transfer                                   # native MLP vs VQC -> transfer.json

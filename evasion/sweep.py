@@ -30,6 +30,15 @@ hardening (evasion/joint_harden.py --extra-sweep); held-out points are its test 
 
     sudo .venv/bin/python -m evasion.sweep --intervals 2,4,8 --seeds-per-config 10 \
          --box 8 --out results/evasion/sweep_box.npz
+
+Points outside that box test whether range-wide hardening extends past what it was trained on. Two
+held-out sweeps cover the L-shaped region around it: timing jitter past 0.8 (any size jitter up to 1.0),
+and size jitter past 0.6 with timing jitter inside the box. Size jitter 1.0 still sends >= 1 byte:
+
+    sudo .venv/bin/python -m evasion.sweep --intervals 2,4,8 --seeds-per-config 10 --only-heldout \
+         --box 8 --box-jitter 0.8,2.0 --box-size 0,1.0 --box-seed 1 --out results/evasion/sweep_outside_jitter.npz
+    sudo .venv/bin/python -m evasion.sweep --intervals 2,4,8 --seeds-per-config 10 --only-heldout \
+         --box 8 --box-jitter 0,0.8 --box-size 0.6,1.0 --box-seed 2 --out results/evasion/sweep_outside_size.npz
 """
 import argparse
 
