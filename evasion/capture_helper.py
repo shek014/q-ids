@@ -1,10 +1,23 @@
-"""Capture-only half of the evasion query, run under SYSTEM python3 (which has Mininet but no
-numpy). Builds the minimal 2-host topology, runs one beacon with the given parameters against a
-UDP echo C2, captures the traffic, and writes the pcap + a meta sidecar + the check-in log. It does
-NO feature extraction (that needs numpy/scapy and happens in the .venv half, evasion/query.py), so
-this file imports nothing beyond Mininet + the pure-stdlib capture wrapper.
+"""Capture-only half of the C2 evasion query, run under SYSTEM python3 (which has Mininet but no
+numpy). Runs ONE controlled beacon with the given parameters against a UDP echo C2, captures the
+traffic, and writes the pcap + a meta sidecar + the check-in log. It does NO feature extraction (that
+needs numpy/scapy and happens in the .venv half, evasion/query.py), so this file imports nothing
+beyond Mininet + the pure-stdlib capture wrapper.
 
-Invoked as a subprocess by evasion/query.py; not meant to be run by hand.
+Topology (--topology):
+  full    (default) the training scenario's own network (configs/scenarios/c2.yaml): same hosts,
+          servers and background traffic as the dataset captures, so the controlled beacon shares the
+          link and the contested boundary exactly as it did in training and the query flow is
+          in-distribution. Background parameters are sampled once per seed, so every jitter level of an
+          instance sees the same background. The controlled beacon runs on h2 against the scenario's
+          echo server (C2_PORT); the scenario's OWN second beacon (h3) and every benign host run as
+          background and are excluded from scoring by MAC.
+  minimal the original 2-host topology (no contention, no confusers). Kept so older sweeps stay
+          reproducible; its beacon flows are more regular than any training beacon because nothing else
+          shares the link (out of distribution, in the MORE-detectable direction).
+
+Mirrors evasion/exfil_capture_helper.py (the exfil version). Invoked as a subprocess by
+evasion/query.py; not meant to be run by hand.
 """
 import argparse
 import json
@@ -18,10 +31,42 @@ from mininet.link import TCLink
 from capture.capture import Capture
 from topology.topo import IDSTopo
 
-C2_PORT = 9999
+C2_PORT = 9999                                   # matches the udp_echo server in configs/scenarios/c2.yaml
+DEFAULT_SCENARIO = "configs/scenarios/c2.yaml"
 
 
-def capture(theta, window, seed, out_dir):
+def _start_full(scenario_path, seed):
+    """Build the training scenario's network and start every server and background flow EXCEPT the
+    controlled beacon (h2). Returns (net, h1, h2, servers, background, background_macs)."""
+    import random
+    import yaml
+    from topology.run import _resolve_args, _cmd_for, _hosts_of
+    sc = yaml.safe_load(open(scenario_path))
+    rng = random.Random(f"c2-query-bg-{seed}")
+    net = Mininet(topo=IDSTopo(n_hosts=sc["hosts"]), controller=OVSController, link=TCLink)
+    net.start()
+    for h in net.hosts:
+        for intf in h.intfList():
+            if intf.name != "lo":
+                h.cmd(f"ethtool -K {intf.name} gso off tso off gro off lro off")
+    net.staticArp()
+    h1, h2 = net.get("h1"), net.get("h2")
+    servers = [net.get(sv["host"]).popen(_cmd_for(sv["module"], _resolve_args(sv.get("args", {}), net, rng)))
+               for sv in sc.get("servers", [])]
+    background, bg_macs = [], []
+    for role in ("benign", "attack"):
+        for flow in sc.get(role, []):
+            for hn in _hosts_of(flow):
+                if hn == "h2":
+                    continue                      # h2 is the controlled beacon
+                host = net.get(hn)
+                background.append((host, _cmd_for(flow["module"],
+                                                  _resolve_args(flow.get("args", {}), net, rng, self_host=host))))
+                bg_macs.append(host.MAC())
+    return net, h1, h2, servers, background, bg_macs
+
+
+def capture(theta, window, seed, out_dir, topology="full", scenario=DEFAULT_SCENARIO):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     pcap_path = out / "query.pcap"
@@ -29,18 +74,23 @@ def capture(theta, window, seed, out_dir):
     if log_path.exists():
         log_path.unlink()
 
-    net = Mininet(topo=IDSTopo(n_hosts=2), controller=OVSController, link=TCLink)
-    net.start()
-    try:
+    if topology == "full":
+        net, h1, h2, servers, background, bg_macs = _start_full(scenario, seed)
+    else:
+        net = Mininet(topo=IDSTopo(n_hosts=2), controller=OVSController, link=TCLink)
+        net.start()
         h1, h2 = net.get("h1"), net.get("h2")
         for h in (h1, h2):
             for intf in h.intfList():
                 if intf.name != "lo":
                     h.cmd(f"ethtool -K {intf.name} gso off tso off gro off lro off")
         net.staticArp()
+        servers = [h1.popen(["python3", "-m", "traffic.udp_echo", "--ports", str(C2_PORT)])]
+        background, bg_macs = [], []
 
-        echo = h1.popen(["python3", "-m", "traffic.udp_echo", "--ports", str(C2_PORT)])
-        time.sleep(1.0)
+    bg_procs = []
+    try:
+        time.sleep(1.0)                                  # let servers bind
 
         beacon_cmd = [
             "python3", "-m", "traffic.periodic_client",
@@ -54,19 +104,29 @@ def capture(theta, window, seed, out_dir):
             "--log", str(log_path),
         ]
         with Capture(iface="h1-eth0", out_path=str(pcap_path), node=h1):
+            # background starts with the beacon, as in a training run (all generators launch together)
+            bg_procs = [host.popen(cmd) for host, cmd in background]
             t0 = time.time()
             beacon = h2.popen(beacon_cmd)
             time.sleep(window + 1.0)
             if beacon.poll() is None:
                 beacon.terminate()
-        if echo.poll() is None:
-            echo.terminate()
+            for bp in bg_procs:
+                if bp.poll() is None:
+                    bp.terminate()
+        for sv in servers:
+            if sv.poll() is None:
+                sv.terminate()
 
         (out / "meta.json").write_text(json.dumps({
-            "beacon_mac": h2.MAC(), "capture_mac": h1.MAC(),
+            "beacon_mac": h2.MAC(), "capture_mac": h1.MAC(), "background_macs": bg_macs,
+            "topology": topology,
             "window_start": t0, "window": window, "theta": theta, "seed": seed,
         }))
     finally:
+        for bp in bg_procs:
+            if bp.poll() is None:
+                bp.terminate()
         net.stop()
 
 
@@ -79,9 +139,12 @@ def main():
     p.add_argument("--window", type=float, required=True)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out-dir", required=True)
+    p.add_argument("--topology", default="full", choices=["full", "minimal"])
+    p.add_argument("--scenario", default=DEFAULT_SCENARIO)
     a = p.parse_args()
     capture({"interval": a.interval, "jitter": a.jitter, "size_jitter": a.size_jitter,
-             "payload_size": a.payload_size}, a.window, a.seed, a.out_dir)
+             "payload_size": a.payload_size}, a.window, a.seed, a.out_dir,
+            topology=a.topology, scenario=a.scenario)
 
 
 if __name__ == "__main__":

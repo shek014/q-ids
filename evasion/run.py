@@ -79,6 +79,9 @@ def main():
     p.add_argument("--max-interval", type=float, default=30.0)
     p.add_argument("--threshold", type=float, default=0.5, help="P(benign) to count as evaded")
     p.add_argument("--full-grid", action="store_true", help="evaluate the whole grid (curve), no early stop")
+    p.add_argument("--topology", default="full", choices=["full", "minimal"],
+                   help="full = training scenario network with background traffic (in-distribution); "
+                        "minimal = old 2-host topology")
     p.add_argument("--work-dir", default="/tmp/evasion_work")
     p.add_argument("--out", default=None)
     args = p.parse_args()
@@ -94,7 +97,7 @@ def main():
     def query_fn(theta, seed):
         try:
             return run_query(theta, window=args.window, max_interval=args.max_interval,
-                             seed=seed, work_dir=args.work_dir)
+                             seed=seed, work_dir=args.work_dir, topology=args.topology)
         except Exception as e:  # noqa: BLE001 - one flaky capture must not kill the batch
             print(f"  query failed (seed={seed}, {args.axis}={theta[args.axis]}): {e}")
             return _FAILED
@@ -108,7 +111,8 @@ def main():
     pf_cfg, pf_seed = instances[0][1], instances[0][2]
     try:
         pf = run_query({**pf_cfg, args.axis: values[0]}, window=args.window,
-                       max_interval=args.max_interval, seed=pf_seed, work_dir=args.work_dir)
+                       max_interval=args.max_interval, seed=pf_seed, work_dir=args.work_dir,
+                       topology=args.topology)
     except Exception as e:  # noqa: BLE001
         raise SystemExit(f"preflight capture FAILED: {e}\n"
                          "Is OVS up? try: sudo systemctl start ovsdb-server ovs-vswitchd")

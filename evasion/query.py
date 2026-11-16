@@ -39,7 +39,7 @@ class QueryResult:
         return self.features is not None and self.functionality.functional
 
 
-def run_query(theta, window=60.0, max_interval=30.0, seed=0, work_dir=None):
+def run_query(theta, window=60.0, max_interval=30.0, seed=0, work_dir=None, topology="full"):
     """theta: {interval, jitter, size_jitter, payload_size?}. Returns a QueryResult."""
     work = Path(work_dir) if work_dir else Path(tempfile.mkdtemp(prefix="evq_"))
     cmd = [
@@ -51,12 +51,19 @@ def run_query(theta, window=60.0, max_interval=30.0, seed=0, work_dir=None):
         "--window", str(window),
         "--seed", str(seed),
         "--out-dir", str(work),
+        "--topology", topology,
     ]
     subprocess.run(cmd, check=True)  # inherits root from the driver; builds+captures the topology
 
     meta = json.loads((work / "meta.json").read_text())
-    X, _ = extract_pcap(work / "query.pcap", mac_labels={meta["beacon_mac"]: "c2"},
-                        exclude_macs=[meta["capture_mac"]])
+    # keep ONLY the controlled beacon's flow: the capture host and every background host (the
+    # scenario's own second beacon h3 and all benign confusers) are excluded by MAC so unlabeled rows
+    # can't leak into scoring. In the minimal topology background_macs is empty, so this reduces to the
+    # old behaviour (drop the capture host, keep the single beacon flow).
+    X, y = extract_pcap(work / "query.pcap", mac_labels={meta["beacon_mac"]: "c2"},
+                        exclude_macs=[meta["capture_mac"], *meta.get("background_macs", [])],
+                        class_names=["benign", "c2"])
+    X = X[y == 1] if len(X) else X
     features = X[0] if len(X) else None
     func = oracle.evaluate(oracle.read_checkins(work / "checkins.log"), max_interval,
                            window_start=meta["window_start"],
@@ -73,11 +80,13 @@ def main():
     p.add_argument("--window", type=float, default=60.0)
     p.add_argument("--max-interval", type=float, default=30.0)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--topology", default="full", choices=["full", "minimal"])
     a = p.parse_args()
 
     theta = {"interval": a.interval, "jitter": a.jitter,
              "size_jitter": a.size_jitter, "payload_size": a.payload_size}
-    r = run_query(theta, window=a.window, max_interval=a.max_interval, seed=a.seed)
+    r = run_query(theta, window=a.window, max_interval=a.max_interval, seed=a.seed,
+                  topology=a.topology)
 
     f = r.functionality
     print(f"\ntheta={theta}")

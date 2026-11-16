@@ -87,6 +87,9 @@ def main():
     p.add_argument("--train-frac", type=float, default=0.67, help="must match evasion.harden")
     p.add_argument("--window", type=float, default=60.0)
     p.add_argument("--max-interval", type=float, default=30.0)
+    p.add_argument("--topology", default="full", choices=["full", "minimal"],
+                   help="full = training scenario network with background traffic (in-distribution); "
+                        "minimal = old 2-host topology")
     p.add_argument("--out", default="results/evasion/sweep.npz")
     p.add_argument("--work-dir", default="/tmp/evasion_work")
     args = p.parse_args()
@@ -119,7 +122,7 @@ def main():
     def one(cfg, value, seed):
         theta = {**cfg, axis: value}
         return run_query(theta, window=args.window, max_interval=args.max_interval,
-                         seed=seed, work_dir=args.work_dir)
+                         seed=seed, work_dir=args.work_dir, topology=args.topology)
 
     # checkpoint/resume: progress is saved after every instance to <out>.partial.npz; rerunning the
     # same command after a crash or power cut skips finished instances instead of starting over.
@@ -171,6 +174,7 @@ def main():
              config_table=np.array(labels["config_table"]),
              inst_config_idx=np.array(labels["inst_config_idx"]),
              inst_seed=np.array(labels["inst_seed"]),
+             topology=args.topology,
              schema_version=3, window=args.window, max_interval=args.max_interval)
     import os
     os.remove(_ckpt_path(args.out))   # final file written; checkpoint no longer needed
