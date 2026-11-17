@@ -1369,9 +1369,16 @@ seed and a benign FPR of 0.170 at seed 0, below its undefended 0.185. Across see
 the benign FPR over single-axis hardening in most seeds for four of the five learned detectors, by a
 median of 0.7 to 2.2 points; XGBoost was the exception. The training data covered two lines through a
 two-parameter space. XGBoost held on both lines and missed part of the region between them; the MLPs
-and the VQC did not hold even on held-out beacons of the size line in most seeds. Our threat model gives
-the beacon four such parameters
-(Section~\ref{sec:threat}), and we hardened against two.
+and the VQC did not hold even on held-out beacons of the size line in most seeds.
+
+Training on random points across the whole region, with the same number of added beacons, closed the
+region for both tree ensembles: at most 1 of 9 held-out instances inside it evaded either, in every
+seed, at a median benign FPR within 0.8 points of joint hardening. It did not extend past the region.
+Size jitter above the trained maximum of $0.6$ evaded the range-wide XGBoost on 8 or 9 of 9 held-out
+instances in every seed and the Random Forest on 3 to 5, and beacons past both edges evaded both at
+seed 0 on 20 and 22 of 28 points. Every one of those beacons still worked. A defender who hardens over a
+parameter range has to choose its upper end, and the attacker pays nothing to go past it. Our threat
+model gives the beacon four such parameters (Section~\ref{sec:threat}), and we hardened against two.
 
 \subsection{Matching query conditions to training captures}
 Our first exfiltration sweep ran evasion queries in a two-host network without background traffic. The
@@ -1405,15 +1412,16 @@ limit on which features we tested, not on whether the tested features survive mo
         benign mix is about $3.4\times$ denser in the beacon timing band than the real reference host
         (Section~\ref{sec:testbed}), so our absolute false-positive rates are higher than a deployment
         on that host's traffic would see. The evasion results do not depend on this density.
-  \item \emph{Small held-out sets.} Hardening, single-axis and joint, is evaluated on 9 held-out
+  \item \emph{Small held-out sets.} Hardening, single-axis, joint and range-wide, is evaluated on 9 held-out
         instances per family and each exfiltration escalation sweep on 6, so a 6/6 result has a Wilson
         lower bound of 0.61. These sweeps test a specific explanation and do not estimate rates
         precisely.
   \item \emph{Training seeds vary the model, not the data.} The ten-seed study changes initialisation
         and sampling with the split and the captured traffic held fixed. We did not recapture the training
         traffic, so variation from a different set of scenario runs is not measured.
-  \item \emph{Finite grids.} Timing jitter is swept to $0.8$, size jitter to $0.6$ and the throttle to
-        $c=12$. A detector that is not evaded on a grid is resistant only up to its top value.
+  \item \emph{Finite grids.} The main sweeps take timing jitter to $0.8$, size jitter to $0.6$ and the
+        throttle to $c=12$; the outside-range C2 sweeps take timing jitter to $2.0$ and size jitter to
+        $1.0$. A detector that is not evaded on a grid is resistant only up to its top value.
   \item \emph{Two attack families, binary tasks.} Both tasks separate one attack class from benign
         traffic. In attacks whose signal is bound to their function, such as volumetric denial of
         service, reducing the signal also reduces the attack's effect, and our results do not cover
@@ -1421,8 +1429,8 @@ limit on which features we tested, not on whether the tested features survive mo
   \item \emph{Simulated, single-architecture VQC.} The VQC runs on a noiseless state-vector simulator
         with one circuit design (8 qubits, 4 entangling layers); other encodings or hardware noise
         could behave differently.
-  \item \emph{Weak attacker.} The attacker is a black-box grid search along one axis at a time, with no
-        model knowledge, so an adaptive attacker would do at least as well.
+  \item \emph{Weak attacker.} The attacker is a black-box search along one axis at a time or over
+        random points, with no model knowledge, so an adaptive attacker would do at least as well.
   \item \emph{Single observation window.} Features are computed over a fixed 60\,s window. Detectors
         that aggregate different features over longer horizons were not evaluated; the per-flow shape
         features we did test do not recover under more observation, for the reason given above.
