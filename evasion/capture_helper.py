@@ -132,6 +132,7 @@ def capture(theta, window, seed, out_dir, topology="full", scenario=DEFAULT_SCEN
                 beacon = h2.popen(beacon_cmd)
                 time.sleep(window + 1.0)
             else:
+                from topology.run import _resolve_args, _cmd_for
                 bg_procs = [b["host"].popen(b["cmd"]) for b in background if b["periodic"]]
                 t0 = time.time()
                 beacon = h2.popen(beacon_cmd)
