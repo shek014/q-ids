@@ -164,6 +164,11 @@ python -m evasion.harden_eval --out results/evasion/harden_eval.json
 python -m evasion.joint_harden                               # -> results/*_joint_hardened
 python -m evasion.joint_eval                                 # -> results/evasion/joint_harden_eval.json
 python -m evasion.joint_harden --extra-sweep results/evasion/sweep_box.npz --suffix box_hardened   # range-wide
+
+# 5. 10-minute runs (root, ~8.5 h): 9 held-out instances x 5 (jitter, size jitter) settings, pcaps reduced
+#    to per-window features and connection events; then windowed alarms, RITA-style scoring, cv_iat
+sudo .venv/bin/python -m evasion.long_run --out-dir results/long
+python -m evasion.long_eval                                  # -> results/long/long_eval.json
 ```
 
 ### Data exfiltration
