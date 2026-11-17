@@ -233,6 +233,49 @@ def fig_operating_point():
     save(fig, "fig7_operating_point")
 
 
+def fig_range():
+    """Fig 8: held-out C2 beacons in the (timing jitter, size jitter) plane, scored by hardened tree
+    ensembles. Points inside the dashed box come from the random-box sweep, points outside it from the
+    two outside-range sweeps (evasion/sweep.py --box). Grey lines: the two sweep lines the joint round
+    trained on."""
+    from evasion import paper_metrics as pm
+    from evasion.harden import split_instances
+    sw = np.load("results/evasion/sweep.npz")
+    _, held = split_instances(sw, 0.67)
+    sweeps = [(np.load("results/evasion/sweep_box.npz"), held)] + [
+        (np.load(f"results/evasion/sweep_outside_{t}.npz"), np.arange(len(held))) for t in ("jitter", "size")]
+    panels = [("xgb_joint_hardened", "XGBoost, joint"), ("xgb_box_hardened", "XGBoost, range-wide"),
+              ("rf_box_hardened", "Random Forest, range-wide")]
+    fig, axes = plt.subplots(1, 3, figsize=(7.2, 2.7), sharey=True)
+    for ax, (d, title) in zip(axes, panels):
+        det = Detector.from_result(f"results/{d}")
+        detected = pm.score(det, sw, held)["detected"]
+        th, ev, ok = [], [], []
+        for s_, idx in sweeps:
+            b = pm.box_score(det, s_, idx, detected)
+            th.append(b["theta"].reshape(-1, 2))
+            ev.append((b["usable"] & (b["P"] >= pm.THRESHOLD)).ravel())
+            ok.append(b["usable"].ravel())
+        th, ev, ok = np.vstack(th), np.concatenate(ev), np.concatenate(ok)
+        ax.plot([0, 0.8], [0, 0], color="#BBBBBB", lw=3, solid_capstyle="butt", zorder=1)
+        ax.plot([0.5, 0.5], [0, 0.6], color="#BBBBBB", lw=3, solid_capstyle="butt", zorder=1)
+        ax.add_patch(matplotlib.patches.Rectangle((0, 0), 0.8, 0.6, fill=False, ls="--", lw=1.0,
+                                                  ec="#555555", zorder=2))
+        c = ok & ~ev
+        ax.scatter(th[c, 0], th[c, 1], s=14, facecolors="none", edgecolors="#7A7A7A", lw=0.8,
+                   label="caught", zorder=3)
+        ax.scatter(th[ev, 0], th[ev, 1], s=16, color="#D55E00", marker="X", lw=0, label="evaded", zorder=4)
+        ax.set_title(f"{title}\n{int(ev.sum())} of {int(ok.sum())} points evade", fontsize=8)
+        ax.set_xlim(-0.04, 2.04)
+        ax.set_ylim(-0.04, 1.04)
+        ax.set_xlabel("Timing jitter")
+    axes[0].set_ylabel("Payload-size jitter")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.06))
+    fig.tight_layout()
+    save(fig, "fig8_range")
+
+
 if __name__ == "__main__":
     fig_evasion_curve()
     fig_exfil_curve()
@@ -240,3 +283,4 @@ if __name__ == "__main__":
     fig_feature_overlap()
     fig_decision_space()
     fig_operating_point()
+    fig_range()

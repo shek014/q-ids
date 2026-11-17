@@ -205,7 +205,7 @@ mkdir -p win && editcap -i 60 out.pcap win/w.pcap
 python -m features.extract --pcap-dir win --out data/real_benign.npz
 
 python paper/realism_check.py                # -> paper/figures/fig6_realism.pdf
-python paper/make_figures.py                 # -> paper/figures/fig1-fig5, fig7 (after operating_point)
+python paper/make_figures.py                 # -> paper/figures/fig1-fig5, fig7 (after operating_point), fig8 (after the box sweeps)
 cp paper/figures/*.pdf paper/tex/figures/
 ```
 
