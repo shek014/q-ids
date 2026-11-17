@@ -627,8 +627,9 @@ models, so capture noise does not differ between any two detectors being compare
 A single training run cannot separate a property of a model family from the luck of one initialisation.
 We therefore retrain every learned detector with model seeds 0 to 9, keeping the data split fixed at the
 paper's split. The seed sets the MLP and VQC initial weights and batch order and the Random Forest and
-XGBoost random state; the single-feature rule has no random component. Each seed covers the clean,
-single-axis hardened and jointly hardened detectors of both families, and every seed is scored on the
+XGBoost random state; the single-feature rule has no random component. Each seed covers the clean and
+single-axis hardened detectors of both families and the jointly and range-wide hardened C2 detectors,
+and every seed is scored on the
 same saved sweeps with the same conventions. Seed 0 reproduces the detailed tables, which report it.
 
 \subsection{Adversarial-training defense and axis escalation}
@@ -651,6 +652,22 @@ We score the jointly hardened detectors on the 9 held-out instances along three 
 alone, payload-size jitter at timing jitter $0.5$, and payload-size jitter at timing jitter $0.3$. The
 third line passes through combinations that neither round trained on, since the size sweep in the
 training data was run only at jitter $0.5$.
+
+A third round, \emph{range-wide hardening}, replaces the size line with points spread over the whole
+region the two sweeps span. For each of the 30 instances we capture 8 beacons at (timing jitter, size
+jitter) points drawn by Latin hypercube sampling over $[0, 0.8] \times [0, 0.6]$: each axis is cut into 8
+equal intervals and each interval receives one point. The 21 training instances contribute 168 such
+beacons, the number the size line contributed to joint hardening, and every detector is retrained on
+the clean split, the timing-jitter beacons and these 168. The 72 points of the 9 held-out instances form
+its test set. These points come from the region the round trained on, which favours it over the
+single-axis and joint rounds, so two further held-out sweeps of 8 Latin-hypercube points per instance
+sample outside that region: timing jitter in $[0.8, 2.0]$ with size jitter in $[0, 1.0]$, and size
+jitter in $[0.6, 1.0]$ with timing jitter in $[0, 0.8]$. Above timing jitter 1 some sleeps reach zero
+and check-ins go out back to back; size jitter 1.0 spreads the 64-byte payload over 1 to 128 bytes. The
+oracle judged every capture, and all 384 beacons in these three sweeps were functional. For these
+random-point sweeps we report, over the instances a detector flags unmodified, how many held-out
+instances have at least one evading point. Points of one instance share its seed, so the instance is
+the unit of count; the number of evading points shows how much of a region is open.
 
 \subsection{Second attack family: data exfiltration}
 \label{sec:exfil-method}
@@ -991,6 +1008,79 @@ XGBoost         & 0.831 & 0.156 & 0/9\,{\scriptsize[0.00, 0.30]}      & 1/9\,{\s
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Range-wide hardening}
+\label{sec:box}
+Joint hardening trained on two lines through the timing--size plane, and the held-out random points
+show where it left gaps (Table~\ref{tab:box}). Inside the swept region the jointly hardened MLPs let
+through 32 and 36 of 72 points, on every held-out instance in every seed. The gap sits in a corner
+neither training line reaches: of the 19 points with timing jitter below $0.4$ and size jitter of $0.3$
+or more, 17 evade each MLP. The jointly hardened tree ensembles let through 2 (Random Forest) and 5
+(XGBoost) of the 72.
+
+Range-wide hardening adds the same number of beacons as joint hardening, spread over the region instead
+of along the size line, and it stops the tree ensembles inside the region. At seed 0 XGBoost lets
+through 0 of 72 points and the Random Forest 1, and in every seed at most 1 of 9 held-out instances
+evades either. It also closes the combined line of Table~\ref{tab:joint} for both, at 1 of 9 (median
+over seeds 0.11 for both, against 0.44 and 0.22 after joint hardening). The cost in false positives is
+small: the median benign FPR over seeds is 0.163 for XGBoost and 0.178 for the Random Forest, against
+0.156 and 0.170 after joint hardening. The other learned detectors do not close. The matched MLP and the
+VQC are evaded on 6 to 9 of 9 held-out instances in every seed, and the native MLP on none in four
+seeds, one in one, and 6 to 8 in the other five.
+
+The test above favours this round, because its test points come from the region it trained on. The
+outside-range sweeps remove that advantage (Fig.~\ref{fig:range}). Past the size edge, with timing jitter
+still inside the trained range, 43 of 72 points evade the range-wide XGBoost at seed 0, on 9 of 9
+held-out instances, and 8 or 9 of 9 in every seed. Past the timing edge alone it holds better, at 3 of
+44 points and one instance, but 20 of the 28 points past both edges evade it. The Random Forest degrades
+less: 17 of 72 points past the size edge (4 instances; 3 to 5 across seeds), 5 of 44 past the timing edge
+alone, and 22 of 28 past both. Joint hardening does no better outside the region, with 49 of 72 points
+past the size edge evading XGBoost and 16 evading the Random Forest. Range-wide training moved the tree
+ensembles' boundary to the edge of the region they were trained on, and the attacker only has to step
+past that edge: on payload size for XGBoost, on both parameters for the Random Forest. All 144 beacons
+outside the region were functional.
+
+\begin{table}[htbp]
+\centering
+\caption{Joint and range-wide hardening on random (timing jitter, size jitter) points of the 9 held-out
+C2 instances, 8 per instance per region. Each cell: held-out instances with at least one evading point
+at seed 0 (evading points of 72 in parentheses), and the range of the instance count over training seeds
+0--9. Inside: timing jitter $\le 0.8$, size jitter $\le 0.6$, the region range-wide hardening trained on.
+Size past: size jitter $0.6$--$1.0$, timing jitter $\le 0.8$. Timing past: timing jitter $0.8$--$2.0$,
+size jitter $0$--$1.0$. FPR: benign false-positive rate at seed 0. The rule is deterministic and has no
+seed range.}
+\label{tab:box}
+\setlength{\tabcolsep}{3pt}\scriptsize
+\begin{tabular}{llcccc}
+\toprule
+Detector & Round & FPR & Inside & Size past & Timing past \\
+\midrule
+MLP (native)   & joint      & 0.178 & 9 (32) [9--9] & 9 (71) [9--9] & 9 (68) [9--9] \\
+               & range-wide & 0.193 & 7 (13) [0--8] & 9 (39) [8--9] & 9 (62) [9--9] \\
+MLP (matched)  & joint      & 0.148 & 9 (36) [9--9] & 9 (70) [9--9] & 9 (70) [9--9] \\
+               & range-wide & 0.200 & 9 (27) [6--9] & 9 (68) [9--9] & 9 (53) [7--9] \\
+VQC            & joint      & 0.274 & 8 (10) [5--9] & 9 (64) [6--9] & 5 (16) [4--9] \\
+               & range-wide & 0.289 & 7 (17) [6--9] & 8 (61) [8--9] & 6 (12) [6--9] \\
+Random Forest  & joint      & 0.170 & 2 (2) [2--2]  & 5 (16) [4--5] & 9 (41) [8--9] \\
+               & range-wide & 0.178 & 1 (1) [0--1]  & 4 (17) [3--5] & 8 (27) [7--9] \\
+XGBoost        & joint      & 0.156 & 3 (5) [2--3]  & 8 (49) [8--9] & 9 (40) [9--9] \\
+               & range-wide & 0.156 & 0 (0) [0--1]  & 9 (43) [8--9] & 9 (23) [9--9] \\
+\texttt{cv\_iat} rule & joint      & 0.674 & 8 (11) & 7 (11) & 9 (72) \\
+               & range-wide & 0.667 & 8 (14) & 8 (16) & 9 (72) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig8_range.pdf}
+\caption{Held-out C2 beacons in the timing--size plane, scored by three hardened tree ensembles:
+jointly hardened XGBoost (left), range-wide hardened XGBoost (middle) and range-wide hardened Random
+Forest (right), all at seed 0. Dashed box: the region range-wide hardening trained on. Grey lines: the
+two sweep lines joint hardening trained on. Each point is one functional captured beacon; crosses evade
+the detector, circles are caught.}
+\label{fig:range}
+\end{figure}
 
 \subsection{Data exfiltration}
 \label{sec:exfil-results}
