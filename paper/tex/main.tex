@@ -263,8 +263,9 @@ Earlier C2 detectors look at many connections over long periods rather than one 
 \cite{tegeler2012} detects bots from statistics of their network traffic without inspecting payloads,
 Disclosure~\cite{bilge2012} identifies C2 servers from large-scale NetFlow records, and
 BAYWATCH~\cite{hu2016baywatch} detects beaconing hosts in enterprise-scale networks. These systems
-aggregate behaviour over horizons our 60\,s window does not cover (Section~\ref{sec:window}); we did not
-evaluate them.
+aggregate behaviour over horizons our 60\,s window does not cover, and we did not evaluate them. We did
+test a beacon scorer modelled on the open-source tool RITA~\cite{rita2026}, which scores the regularity
+of connection intervals and sizes between a host pair, over ten-minute runs (Section~\ref{sec:long}).
 
 \subsection{Quantum machine learning for intrusion detection}
 Variational quantum classifiers, quantum SVMs and quantum CNNs have been applied to intrusion
@@ -1499,17 +1500,26 @@ a mismatch, because the naive rate drops.
 \subsection{The observation window}
 \label{sec:window}
 Our features are computed over a 60\,s window, while operational beacon hunting often scores a
-destination over hours or days of connection logs~\cite{gardiner2014}. A reviewer may ask whether a
-longer window would recover the signal. For the features we attack, it would not. The evasion raises
-the beacon's actual check-in jitter, so the inter-arrival times are drawn from a wider distribution for
-as long as the beacon runs. A longer window estimates the same \texttt{cv\_iat} more precisely, and
-that value now sits in the benign range; more samples of a benign-range statistic do not make it
-malicious. The 60\,s window already holds 7 to 30 check-ins per beacon, enough to estimate
-\texttt{cv\_iat}, so the evasion is not an artifact of a short, noisy estimate. What a longer horizon
-buys the defender is different features, not a better estimate of these: the count of distinct
-destinations a host contacts over a day, the rarity of a destination, or the total bytes a host ships
-over a week. Those are not attacker-set per-flow shape, and we did not evaluate them. The window is a
-limit on which features we tested, not on whether the tested features survive more observation.
+destination over hours or days of connection logs~\cite{gardiner2014}. The ten-minute runs
+(Section~\ref{sec:long}) test whether more observation recovers the signal, and for the features we
+attack it does not. The evasion raises the beacon's actual check-in jitter, so its inter-arrival times
+come from a wider distribution for as long as it runs. Over 600\,s, \texttt{cv\_iat} came within
+$0.031$ of its single-window value for every beacon setting and periodic host; a longer window estimates
+the same value more precisely, and for a jittered beacon that value sits in the benign range. Ten-window
+alarms and a RITA-style scorer over the whole run caught no beacon at timing jitter $0.5$ or more at
+any benign false-positive rate up to 20\%. Both failed for the same reason the single-window detectors
+fail: the rigid benign host is as regular as a naive beacon in every window, so any rule that catches
+regular traffic flags it, and a jittered beacon is less regular than that host.
+
+RITA's whole-second resolution adds a twist. It caught the jittered beacons at the 2\,s interval because
+rounding hid the jitter, and missed the same jitter at 4\,s and 8\,s. Jitter of $\pm1$\,s, timing jitter
+$0.5$ at the 2\,s interval, already kept every such beacon at or below $0.963$, and it costs a beacon
+nothing.
+
+What a longer horizon can give the defender is different features, not a better estimate of these: the
+count of distinct destinations a host contacts over a day, the rarity of a destination, or the total
+bytes a host ships over a week. Those are not per-flow shape the attacker sets, and we did not evaluate
+them. Ten minutes is also far shorter than the 24-hour histograms RITA's two other subscores use.
 
 \subsection{Limitations}
 \begin{itemize}
@@ -1537,9 +1547,11 @@ limit on which features we tested, not on whether the tested features survive mo
         could behave differently.
   \item \emph{Weak attacker.} The attacker is a black-box search along one axis at a time or over
         random points, with no model knowledge, so an adaptive attacker would do at least as well.
-  \item \emph{Single observation window.} Features are computed over a fixed 60\,s window. Detectors
-        that aggregate different features over longer horizons were not evaluated; the per-flow shape
-        features we did test do not recover under more observation, for the reason given above.
+  \item \emph{Observation horizon.} The detectors are trained on 60\,s windows and the longest runs
+        last 600\,s, against hours to days in operational beacon hunting. Detectors that aggregate other
+        features over those horizons were not evaluated, and RITA was reproduced only in its two
+        per-connection subscores. The ten-minute runs share their background across the five settings
+        of an instance, so they hold 45 distinct benign configurations.
 \end{itemize}
 
 % =====================================================================
