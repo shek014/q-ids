@@ -114,14 +114,17 @@ the data must still leave before a deadline. Benign networks carry traffic with 
 health checks are as periodic as a beacon, and backups and downloads move bulk data at high rate. A
 detector cannot treat either shape as malicious without flagging that traffic too.
 
-This choice is the test, not a convenience. The regularity our C2 detectors key on is the signal the
-beaconing-detection literature treats as a reliable discriminator~\cite{yilmaz2026,gardiner2014}, and
-Cobalt Strike exposes check-in jitter as a configuration setting an operator sets before the
-beacon ships~\cite{cobaltstrike_beacon}. A detector that rests on a signal the attacker both controls
-and is known to vary is the case where realizable evasion should succeed if it can succeed anywhere.
-Measuring the cost of that evasion, and whether adversarial training removes it, is what the result
-turns on. We do not claim every flow-level detector is as fragile; we show that the ones built on
-attacker-set traffic shape are, and quantify by how much.
+That an attacker can vary these signals is known in practice. Cobalt Strike exposes check-in jitter
+as a configuration setting an operator sets before the beacon ships~\cite{cobaltstrike_beacon}, and
+RITA, an open-source beacon hunter, scores connection timing, data size and persistence over up to
+24\,h of logs~\cite{rita2026}. Practice does not supply the measurements. It does not say how much
+jitter or throttling a trained flow detector tolerates when the modified traffic must still work,
+whether adversarial training removes the gap or moves it, what a defender pays in false positives to
+close it by moving the threshold, or whether watching a host for longer brings the signal back. We
+measure all four. Because the attacker sets the detected signal in both families, evasion is
+expected to be possible, and the open quantity is its cost. We do not claim every flow-level
+detector is as fragile; we show that the ones built on attacker-set traffic shape are, and by how
+much.
 
 The second question is about the detector. Abreu et al.~\cite{abreu2024}, Thomos and
 Andronikos~\cite{thomos2026} and Gong et al.~\cite{qvcnn2024} apply quantum-classical classifiers to
@@ -140,25 +143,37 @@ the exfiltrated payload reaches the collector within 60\,s. We then harden every
 adversarial training, evaluate it on held-out attack instances, and test whether the attacker recovers
 by changing a parameter the hardening did not cover.
 
+The testbed is controlled so that traffic shape is the only separator. In the C2 scenario the beacons
+and the periodic benign hosts send UDP to the same server port, and the rigid benign host draws its
+interval, jitter and payload size from the beacons' ranges. In the exfiltration scenario the
+exfiltrating hosts and the benign transfers send to the same collector port, and the low-rate benign
+transfers move volumes in the exfiltration's band. Destination reputation, fan-in and host
+telemetry, which a deployed defender would add, are therefore equal between attack and benign hosts
+and outside what we test.
+
 Every detector was evaded on every attack instance it had flagged, with one exception out of 327. The
 median C2 evasion took at most $\pm$30\% check-in jitter, and no evaded beacon needed more than
 $\pm$80\%. Exfiltration evasion cut the target send rate by a factor of 2.5 to 3, which added a median of
 1.6--2.7\,s to a 3.3\,s transfer against a 60\,s deadline. The tree ensembles were no harder to evade
 than the MLP. We retrained every detector with ten model seeds: the VQC was easier to evade than the MLP
 trained on its inputs in 8 of 10 seeds on each family, and its clean accuracy was the lowest of the
-learned detectors in 19 of the 20 runs. Hardening closed the attacked axis for the trained configuration only. Payload-size padding
+learned detectors in 19 of the 20 runs.
+
+Hardening closed the attacked parameter for the trained configuration only. Payload-size padding
 re-broke every hardened C2 detector, and hardened tree ensembles that resisted exfiltration throttling
 were evaded again once the attacker also changed the transfer volume, chunk timing or chunk size.
-Hardening on timing and size together cut timing-jitter evasion to at most 2 of 9 held-out beacons
-for the classical detectors and size-jitter evasion to at most 1 of 9 for the tree ensembles. Padding
-still evaded the jointly hardened MLPs and VQC in most seeds, and a beacon combining $\pm$30\% jitter
-with padding evaded the jointly hardened MLPs and VQC on 6 to 9 of 9 held-out beacons in every seed and
+Hardening on timing and size together left their combination open: a beacon with $\pm$30\% jitter and
+padding evaded the jointly hardened MLPs and VQC on 6 to 9 of 9 held-out beacons in every seed and
 XGBoost on 2 to 7. Training instead on random points across the whole timing and size range stopped
 both tree ensembles inside that range, with at most 1 of 9 held-out beacons evading in any seed. Just
 outside it, padding past the trained maximum evaded the range-wide XGBoost on 8 or 9 of 9 held-out
-beacons in every seed and the Random Forest on 3 to 5. Watching a host for ten minutes did not help the
-defender: alarms over ten 60\,s windows and a beacon scorer modelled on RITA caught no beacon with
-timing jitter of $0.5$ or more at any benign false-positive rate up to 20\%.
+beacons in every seed and the Random Forest on 3 to 5.
+
+The defender's levers that need no retraining cost false positives. Moving the threshold stopped
+jittered beacons for the tree ensembles at a 23--24\% benign false-positive rate, and padded beacons or
+throttled exfiltration needed 34--49\%. Watching a host for ten minutes did not help: alarms over ten
+60\,s windows and a beacon scorer modelled on RITA caught no beacon with timing jitter of $0.5$ or
+more at any benign false-positive rate up to 20\%.
 
 Our contributions are:
 \begin{itemize}
@@ -170,14 +185,14 @@ Our contributions are:
         the first problem-space comparison of a quantum and a classical classifier on a security task,
         and we repeat it over ten training seeds.
   \item Evidence from both attack families that adversarial training defends the attack configuration
-        it was trained on: changing one further attacker-controlled parameter restores evasion at close
-        to the original cost. Hardening on two C2 parameters together leaves combinations of them open
-        for the MLPs and the VQC in every seed, and partly open for XGBoost. Hardening on the whole
-        range of both parameters closes that range for the tree ensembles, and beacons just past its
-        edge evade them again.
-  \item Ten-minute runs showing that more observation does not recover the attacked signal: a
-        jittered beacon's \texttt{cv\_iat} over 600\,s matches its single-window value, and neither
-        multi-window alarms nor a RITA-style scorer separate it from a rigid benign host.
+        it was trained on and not the parameters next to it: changing one further attacker-controlled
+        parameter restores evasion at close to the original cost. Hardening on the whole range of both
+        C2 parameters closes that range for the tree ensembles, and beacons just past its edge evade
+        them again.
+  \item A measurement of what the defender gets without retraining: the benign false-positive rate at
+        which moving the threshold stops each evasion, and ten-minute runs in which a jittered
+        beacon's \texttt{cv\_iat} over 600\,s matches its single-window value and neither multi-window
+        alarms nor a RITA-style scorer separate it from a rigid benign host.
   \item A methodological result: evasion queries must reproduce the network conditions of the
         training captures. Exfiltration queries run on an uncontended two-host topology were out of
         distribution, and two detectors called them benign with no perturbation applied.
