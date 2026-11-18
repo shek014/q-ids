@@ -1297,6 +1297,76 @@ the default $\tau=0.5$.}
 \label{fig:op}
 \end{figure}
 
+\subsection{Ten-minute runs}
+\label{sec:long}
+Watching a host for ten windows instead of one does not catch the evading beacons
+(Table~\ref{tab:long}). Single windows already show why. Of the 90 windows at each setting with timing
+jitter $0.5$ or more, no detector flags more than 2. The naive beacon is flagged in all 90 of its windows
+by the MLPs, XGBoost and the rule, and in 60 by the Random Forest and the VQC, which never flag the three
+2\,s-interval beacons, the same three held-out instances they miss unmodified in the sweeps. At timing
+jitter $0.3$ the detectors flag 3 to 32 of 90 windows, so an alarm on any one window catches some of
+those beacons: all 9 for the native MLP, 3 for the tree ensembles.
+
+Aggregation does not lower the false-positive rate enough to pay for that. The rigid benign host h4,
+which the scenario draws from the same timing and size range as the beacons, is flagged in all ten
+windows in 40 to 42 of its 45 runs by the native MLP and the tree ensembles. Even requiring all ten
+windows therefore alarms on 40 to 46 of the 225 benign flows (18 to 20\%) for every learned detector,
+and with that rule no beacon at jitter $0.3$ or more is caught by any of them except one by the VQC.
+Thresholding the mean $P(\text{benign})$ over the ten windows at a 10\% benign false-positive rate
+catches none of the 36 beacons at jitter $0.3$ or more, for any detector, and catches the naive beacon
+on 1 to 9 of 9.
+
+The RITA-style scorer has the same blind spot. The rigid benign host scores at least $0.998$ in 10 of
+its 45 runs, so no threshold gives this scorer a benign false-positive rate between 0 and 7.4\%. At
+7.4\% it catches all 9 naive beacons, 15 of the 45 runs of the scenario's own rigid beacon (h3), and 3
+of 9 beacons at jitter $0.3$, all three at the 2\,s interval. Those score a perfect $1.000$ because
+RITA rounds connection times to whole seconds: a 2\,s check-in with $\pm0.6$\,s of jitter mostly lands
+on a 2\,s gap. The same jitter at 4\,s and 8\,s intervals scores $0.938$ and $0.969$, below the rigid
+benign host's median of $0.990$. No beacon at jitter $0.5$ or more scores above $0.963$, and none is
+caught at any threshold with a benign false-positive rate up to 16.3\%.
+
+The observation window does not change the feature either. For every beacon setting and every periodic
+host, the median \texttt{cv\_iat} over the whole 600\,s run is within $0.031$ of its median over single
+60\,s windows: $0.452$ against $0.456$ for beacons at jitter $0.8$, and $0.024$ against $0.023$ for the
+rigid benign host.
+
+\begin{table}[htbp]
+\centering
+\caption{Ten-minute runs: flows alarmed by each rule, 9 held-out beacons per (timing jitter, size
+jitter) setting and 225 benign flows. 1/10 and 5/10: alarm when at least 1 or 5 of the ten 60\,s windows
+are flagged at $\tau=0.5$. Mean $P$: alarm when the mean $P(\text{benign})$ over the windows is below a
+threshold set for a 10\% benign false-positive rate (achieved 9.8\%). RITA-style: whole-run score at the
+lowest achievable benign false-positive rate on the 135 periodic benign flows (7.4\%, threshold
+$0.998$). FPR: benign flows alarmed.}
+\label{tab:long}
+\setlength{\tabcolsep}{3pt}\scriptsize
+\begin{tabular}{llcccccc}
+\toprule
+Detector & Rule & FPR & $(0,0)$ & $(0.3,0)$ & $(0.5,0.3)$ & $(0.8,0)$ & $(0.8,0.6)$ \\
+\midrule
+MLP (native)  & 1/10   & 0.244 & 9 & 9 & 0 & 0 & 0 \\
+              & 5/10   & 0.222 & 9 & 2 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 6 & 0 & 0 & 0 & 0 \\
+MLP (matched) & 1/10   & 0.249 & 9 & 7 & 0 & 0 & 0 \\
+              & 5/10   & 0.222 & 9 & 4 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 6 & 0 & 0 & 0 & 0 \\
+VQC           & 1/10   & 0.333 & 6 & 5 & 2 & 2 & 0 \\
+              & 5/10   & 0.200 & 6 & 3 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 3 & 0 & 0 & 0 & 0 \\
+Random Forest & 1/10   & 0.227 & 6 & 3 & 0 & 0 & 0 \\
+              & 5/10   & 0.222 & 6 & 0 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 1 & 0 & 0 & 0 & 0 \\
+XGBoost       & 1/10   & 0.231 & 9 & 3 & 0 & 0 & 0 \\
+              & 5/10   & 0.222 & 9 & 0 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 3 & 0 & 0 & 0 & 0 \\
+\texttt{cv\_iat} rule & 1/10 & 0.547 & 9 & 3 & 1 & 0 & 0 \\
+              & 5/10   & 0.489 & 9 & 0 & 0 & 0 & 0 \\
+              & mean $P$ & 0.098 & 9 & 0 & 0 & 0 & 0 \\
+RITA-style    & whole run & 0.074 & 9 & 3 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Variation across training seeds}
 \label{sec:seeds}
 Table~\ref{tab:seeds} repeats the main measurements over model seeds 0 to 9
