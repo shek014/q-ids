@@ -675,6 +675,36 @@ random-point sweeps we report, over the instances a detector flags unmodified, h
 instances have at least one evading point. Points of one instance share its seed, so the instance is
 the unit of count; the number of evading points shows how much of a region is open.
 
+\subsection{Ten-minute runs}
+\label{sec:long-method}
+The sweeps score one 60\,s flow per query. To test detectors that watch a host for longer, we ran the
+training scenario for 600\,s per run. The controlled beacon (h2), the scenario's own beacon (h3) and
+the three periodic benign hosts (h4--h6) run for the whole 600\,s with parameters drawn once, as an NTP
+client or a health check would. The bursty hosts (h7 application sessions, h8 bulk transfer) restart
+every 60\,s with freshly drawn parameters, so each 60\,s window aligned to the start of a run holds the
+same mix of traffic as one training capture; on a test capture, the first window's features matched the
+training extractor's output exactly. We captured the 9 held-out instances at five settings of (timing
+jitter, size jitter): $(0, 0)$, $(0.3, 0)$, $(0.8, 0)$, $(0.5, 0.3)$ and $(0.8, 0.6)$, 45 runs in all.
+The background parameters of an instance are drawn from its seed, so its five runs share them, and the
+225 benign flows come from 45 distinct benign configurations. All 45 beacons were functional over the
+full 600\,s.
+
+Each run is scored three ways. First, every detector scores each of the ten 60\,s windows of every flow
+exactly as it scores a training flow, and a host raises an alarm when at least $k$ of its windows are
+flagged, or when its mean $P(\text{benign})$ over the windows falls below a threshold set for a target
+benign false-positive rate. Second, a beacon scorer modelled on RITA~\cite{rita2026}, an open-source
+tool used for beacon hunting, scores each flow over the whole run. We re-implemented RITA's timestamp and
+data-size subscores from its v5.1.2 source and checked them against the ten expected values in its unit
+tests. Each subscore is the mean of a Bowley-skewness score and a median-absolute-deviation score,
+computed over the intervals between connection times in whole seconds and over the bytes the source
+sends per connection; each UDP datagram counts as one connection. RITA's two other subscores are built
+from a 24-hour histogram of connection times, and its duration subscore is zero until a pair has been
+seen in 6 distinct hours, so neither carries information over 600\,s. We report the mean of the two
+per-connection subscores, which is RITA's score with those two removed and the weights renormalised.
+Its false-positive rate is measured on the periodic benign hosts (h4--h6): the testbed restarts h7 and
+h8 on an exact 60\,s schedule, which a beacon scorer reads, correctly, as periodic. Third, we compare
+each UDP flow's \texttt{cv\_iat} over the whole run with its median over single 60\,s windows.
+
 \subsection{Second attack family: data exfiltration}
 \label{sec:exfil-method}
 Exfiltration differs from C2 in two ways. Its detectable signal is throughput rather than timing
