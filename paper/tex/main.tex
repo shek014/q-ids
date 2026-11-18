@@ -945,7 +945,7 @@ We fold the evaded beacons from 21 instances into training as C2 and retrain eve
 the remaining 9 instances (three per interval) out for evaluation (Section~\ref{sec:defense-method}).
 
 \paragraph{Held-out jitter evasion after hardening.} On the held-out instances, jitter evasion drops
-from 100\% to 0\% against the hardened MLPs, Random Forest and XGBoost (Table~\ref{tab:hardened}). Their
+from 100\% to 0\% against the hardened MLPs, Random Forest and XGBoost (single-axis rows of Table~\ref{tab:hardening}). Their
 clean accuracy moves by at most 2.1 points and their benign FPR by at most 3.7 points, and the FPR falls
 for three of the four. Against the hardened VQC, 6 of 9 held-out beacons still evade (3 to 8 of 9 across
 training seeds), at a median jitter
@@ -953,22 +953,53 @@ of $0.45$ against $0.35$ before hardening, and its benign FPR rises from 0.17 to
 \texttt{cv\_iat} as moderate benign traffic, so retraining leaves it unchanged: all 9 held-out beacons
 still evade.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
-\caption{Adversarial training on jittered beacons: clean performance before~$\rightarrow$~after, and
-held-out timing-jitter evasion (9 held-out instances; evaded/detected). Square brackets: Wilson 95\% confidence interval.}
-\label{tab:hardened}
+\caption{C2 hardening rounds on the 9 held-out instances at seed 0: clean test accuracy, benign FPR,
+and evaded/detected along three sweep lines, with the median minimal evading value in parentheses.
+Timing: timing jitter from 0 (grid top $0.8$). Size: payload-size jitter at timing jitter $0.5$ (grid
+top $0.6$). Combined: payload-size jitter at timing jitter $0.3$, a combination absent from the
+single-axis and joint training data. Rounds: none (the original detector), single-axis (jittered
+beacons, Section~\ref{sec:defense}), joint (both sweep lines, Section~\ref{sec:joint}), range-wide
+(random points over the region, Section~\ref{sec:box}). --: the detector flags none of the 9 unmodified
+beacons on that line. Wilson 95\% intervals: 0/9 [0.00, 0.30], 1/9 [0.02, 0.44], 2/9 [0.06, 0.55],
+4/9 [0.19, 0.73], 6/9 [0.35, 0.88], 7/9 [0.45, 0.94], 8/9 [0.56, 0.98], 9/9 [0.70, 1.00], 0/4 [0.00,
+0.49], 2/2 [0.34, 1.00], 3/3 [0.44, 1.00], 5/5 [0.57, 1.00], 6/6 [0.61, 1.00].}
+\label{tab:hardening}
 \setlength{\tabcolsep}{3pt}\footnotesize
-\begin{tabular}{lccc}
+\begin{tabular}{llccccc}
 \toprule
-Detector & Clean accuracy & Benign FPR & Held-out jitter evasion \\
+Detector & Round & Acc. & FPR & Timing & Size & Combined \\
 \midrule
-MLP (native)          & 0.852 $\rightarrow$ 0.847 & 0.163 $\rightarrow$ 0.170 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
-MLP (matched)         & 0.857 $\rightarrow$ 0.836 & 0.185 $\rightarrow$ 0.163 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
-VQC                   & 0.841 $\rightarrow$ 0.815 & 0.170 $\rightarrow$ 0.252 & 6/6\,{\scriptsize[0.61, 1.00]} $\rightarrow$ 6/9\,{\scriptsize[0.35, 0.88]} \\
-Random Forest         & 0.841 $\rightarrow$ 0.852 & 0.185 $\rightarrow$ 0.148 & 6/6\,{\scriptsize[0.61, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
-XGBoost               & 0.852 $\rightarrow$ 0.841 & 0.185 $\rightarrow$ 0.170 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 0/9\,{\scriptsize[0.00, 0.30]} \\
-\texttt{cv\_iat} rule & 0.619 $\rightarrow$ 0.619 & 0.519 $\rightarrow$ 0.533 & 9/9\,{\scriptsize[0.70, 1.00]} $\rightarrow$ 9/9\,{\scriptsize[0.70, 1.00]} \\
+MLP (native)          & none        & 0.852 & 0.163 & 9/9 (0.30) & -- & 2/2 (0.05) \\
+                      & single-axis & 0.847 & 0.170 & 0/9 & 9/9 (0.10) & 9/9 (0.10) \\
+                      & joint       & 0.836 & 0.178 & 1/9 (0.80) & 7/9 (0.60) & 9/9 (0.30) \\
+                      & range-wide  & 0.825 & 0.193 & 1/9 (0.80) & 6/9 (0.35) & 4/9 (0.15) \\
+\addlinespace
+MLP (matched)         & none        & 0.857 & 0.185 & 9/9 (0.30) & -- & 3/3 (0.05) \\
+                      & single-axis & 0.836 & 0.163 & 0/9 & 9/9 (0.10) & 9/9 (0.10) \\
+                      & joint       & 0.836 & 0.148 & 1/9 (0.80) & 7/9 (0.40) & 9/9 (0.15) \\
+                      & range-wide  & 0.841 & 0.200 & 0/9 & 8/9 (0.40) & 9/9 (0.40) \\
+\addlinespace
+VQC                   & none        & 0.841 & 0.170 & 6/6 (0.35) & -- & 3/3 (0.40) \\
+                      & single-axis & 0.815 & 0.252 & 6/9 (0.45) & 5/5 (0.30) & 9/9 (0.30) \\
+                      & joint       & 0.804 & 0.274 & 0/9 & 7/9 (0.60) & 8/9 (0.60) \\
+                      & range-wide  & 0.794 & 0.289 & 0/9 & 8/9 (0.60) & 7/9 (0.40) \\
+\addlinespace
+Random Forest         & none        & 0.841 & 0.185 & 6/6 (0.225) & -- & -- \\
+                      & single-axis & 0.852 & 0.148 & 0/9 & 9/9 (0.15) & 9/9 (0.15) \\
+                      & joint       & 0.831 & 0.170 & 0/9 & 0/9 & 2/9 (0.60) \\
+                      & range-wide  & 0.831 & 0.178 & 0/9 & 1/9 (0.60) & 1/9 (0.60) \\
+\addlinespace
+XGBoost               & none        & 0.852 & 0.185 & 9/9 (0.25) & -- & -- \\
+                      & single-axis & 0.841 & 0.170 & 0/9 & 9/9 (0.05) & 9/9 (0.05) \\
+                      & joint       & 0.831 & 0.156 & 0/9 & 1/9 (0.60) & 7/9 (0.60) \\
+                      & range-wide  & 0.831 & 0.156 & 0/9 & 0/9 & 1/9 (0.60) \\
+\addlinespace
+\texttt{cv\_iat} rule & none        & 0.619 & 0.519 & 9/9 (0.25) & -- & -- \\
+                      & single-axis & 0.619 & 0.533 & 9/9 (0.30) & -- & 0/4 \\
+                      & joint       & 0.519 & 0.674 & 9/9 (0.80) & 0/9 & 0/9 \\
+                      & range-wide  & 0.524 & 0.667 & 9/9 (0.80) & 0/9 & 0/9 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -978,28 +1009,10 @@ We hold timing jitter at $0.5$ and sweep payload-size jitter on the held-out ins
 jitter, no unhardened detector flags any of these 9 beacons; the hardened MLPs and tree ensembles flag
 all 9, the hardened VQC flags 5, and the rule flags none, so the rule drops out of this test. Every
 hardened learned detector is evaded on
-every instance it detected (Table~\ref{tab:sizeaxis}, Fig.~\ref{fig:armsrace}), at a median size jitter
+every instance it detected (Size column of Table~\ref{tab:hardening}, Fig.~\ref{fig:armsrace}), at a median size jitter
 of $0.05$--$0.15$ for the MLPs and tree ensembles and $0.3$ for the VQC, in a median of two to six
 queries. Varying the payload size does not delay or drop a check-in, so this second axis costs the
 beacon as little as the first.
-
-\begin{table}[h]
-\centering
-\caption{Axis escalation: payload-size-jitter sweep against the hardened detectors (timing jitter held
-at $0.5$), on the 9 held-out instances. Square brackets: Wilson 95\% confidence interval.}
-\label{tab:sizeaxis}
-\begin{tabular}{lccc}
-\toprule
-Hardened detector & Evaded & Median min.\ size jitter & Median queries \\
-\midrule
-MLP (native)   & 9/9\,{\scriptsize[0.70, 1.00]} & 0.10 & 3 \\
-MLP (matched)  & 9/9\,{\scriptsize[0.70, 1.00]} & 0.10 & 3 \\
-VQC            & 5/5\,{\scriptsize[0.57, 1.00]} & 0.30 & 6 \\
-Random Forest  & 9/9\,{\scriptsize[0.70, 1.00]} & 0.15 & 4 \\
-XGBoost        & 9/9\,{\scriptsize[0.70, 1.00]} & 0.05 & 2 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \begin{figure}[h]
 \centering
@@ -1015,20 +1028,19 @@ against the hardened detector (100\%).}
 The escalation above leaves open whether a detector trained on both axes at once would hold. We
 retrained every detector on the clean split plus the functional beacons from both the timing-jitter
 and the size-jitter sweeps of the 21 training instances (Section~\ref{sec:defense-method}) and scored
-the 9 held-out instances (Table~\ref{tab:joint}). Size jitter is swept up to $0.6$, which spreads the
+the 9 held-out instances (joint rows of Table~\ref{tab:hardening}). Size jitter is swept up to $0.6$, which spreads the
 64\,B payload over 26 to 102\,B; training beacons carry 32 to 128\,B. Timing jitter is swept up to $0.8$. A detector that resists to the top of a grid is resistant only up to
 that value.
 
-In the seed-0 models (Table~\ref{tab:joint}), joint hardening closes timing jitter: at most 1 of 9
+In the seed-0 models, joint hardening closes timing jitter: at most 1 of 9
 held-out beacons evades any learned detector, and the one that evades the MLPs needs jitter $0.8$. The
 tree ensembles also stop the size sweep at jitter $0.5$ (Random Forest 0 of 9, XGBoost 1 of 9), with the
 same counts in all ten training seeds. The MLPs and the VQC do not. Padding still evades them on 7 of 9
-beacons, at a median size jitter of $0.4$--$0.6$, against $0.1$--$0.3$ for their single-axis versions
-(Table~\ref{tab:sizeaxis}). This line varies most across seeds: the jointly hardened native MLP is
+beacons, at a median size jitter of $0.4$--$0.6$, against $0.1$--$0.3$ for their single-axis versions. This line varies most across seeds: the jointly hardened native MLP is
 evaded on 0 to 8 of its detected beacons depending on the seed, the matched MLP on 1 to 9, the VQC on
 5 to 8.
 
-The third column is the test of whether joint hardening learned the attack or the two lines it was
+The Combined column is the test of whether joint hardening learned the attack or the two lines it was
 trained on. With timing jitter held at $0.3$, between the trained points, and size jitter swept
 upward, every single-axis hardened learned detector is evaded on 9 of 9 beacons at a median size jitter
 of $0.05$--$0.3$. Joint hardening raises that cost to $0.15$--$0.6$ but stops the evasion only for the
@@ -1043,29 +1055,6 @@ three detectors and fell for two. Over ten seeds it rose in 9 seeds for the nati
 fell in 6 seeds for XGBoost ($-1.1$). The \texttt{cv\_iat} rule moves its cut far enough to flag jitter-$0.5$ beacons, which costs it a
 benign FPR of 0.674, and it is still evaded by every held-out beacon at jitter $0.8$.
 
-\begin{table}[htbp]
-\centering
-\caption{Joint timing+size hardening on the 9 held-out C2 instances: clean test performance and
-evaded/detected along three sweep lines, with the median minimal evading value. Timing: timing jitter
-from 0 (grid top $0.8$). Size: payload-size jitter at timing jitter $0.5$ (grid top $0.6$). Combined:
-payload-size jitter at timing jitter $0.3$, a combination absent from training. Square brackets: Wilson
-95\% confidence interval.}
-\label{tab:joint}
-\setlength{\tabcolsep}{2pt}\scriptsize
-\begin{tabular}{lccccc}
-\toprule
-Detector & Acc. & FPR & Timing & Size & Combined \\
-\midrule
-MLP (native)    & 0.836 & 0.178 & 1/9\,{\scriptsize[0.02, 0.44]}, 0.8 & 7/9\,{\scriptsize[0.45, 0.94]}, 0.6 & 9/9\,{\scriptsize[0.70, 1.00]}, 0.3 \\
-MLP (matched)   & 0.836 & 0.148 & 1/9\,{\scriptsize[0.02, 0.44]}, 0.8 & 7/9\,{\scriptsize[0.45, 0.94]}, 0.4 & 9/9\,{\scriptsize[0.70, 1.00]}, 0.15 \\
-VQC             & 0.804 & 0.274 & 0/9\,{\scriptsize[0.00, 0.30]}      & 7/9\,{\scriptsize[0.45, 0.94]}, 0.6 & 8/9\,{\scriptsize[0.56, 0.98]}, 0.6 \\
-Random Forest   & 0.831 & 0.170 & 0/9\,{\scriptsize[0.00, 0.30]}      & 0/9\,{\scriptsize[0.00, 0.30]}      & 2/9\,{\scriptsize[0.06, 0.55]}, 0.6 \\
-XGBoost         & 0.831 & 0.156 & 0/9\,{\scriptsize[0.00, 0.30]}      & 1/9\,{\scriptsize[0.02, 0.44]}, 0.6 & 7/9\,{\scriptsize[0.45, 0.94]}, 0.6 \\
-\texttt{cv\_iat} rule & 0.519 & 0.674 & 9/9\,{\scriptsize[0.70, 1.00]}, 0.8 & 0/9\,{\scriptsize[0.00, 0.30]} & 0/9\,{\scriptsize[0.00, 0.30]} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \subsection{Range-wide hardening}
 \label{sec:box}
 Joint hardening trained on two lines through the timing--size plane, and the held-out random points
@@ -1078,7 +1067,7 @@ or more, 17 evade each MLP. The jointly hardened tree ensembles let through 2 (R
 Range-wide hardening adds the same number of beacons as joint hardening, spread over the region instead
 of along the size line, and it stops the tree ensembles inside the region. At seed 0 XGBoost lets
 through 0 of 72 points and the Random Forest 1, and in every seed at most 1 of 9 held-out instances
-evades either. It also closes the combined line of Table~\ref{tab:joint} for both, at 1 of 9 (median
+evades either. It also closes the combined line of Table~\ref{tab:hardening} for both, at 1 of 9 (median
 over seeds 0.11 for both, against 0.44 and 0.22 after joint hardening). The cost in false positives is
 small: the median benign FPR over seeds is 0.163 for XGBoost and 0.178 for the Random Forest, against
 0.156 and 0.170 after joint hardening. The other learned detectors do not close. The matched MLP and the
