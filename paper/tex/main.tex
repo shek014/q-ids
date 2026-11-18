@@ -520,7 +520,7 @@ component is then mapped affinely into the $R_Y$ angle range that \texttt{AngleE
 monotone per-feature map adds no information. We also train the MLP on all 17 features, which we call
 the native MLP, as the version a defender would deploy. Every preprocessing transform is fit on the
 training split only. The dataset comprises 1{,}260 flows (900 benign, 360 C2) from 180 scenario runs,
-split 70/15/15 into train/validation/test and stratified by class.
+split 70/15/15 into train/validation/test and stratified by class (882, 189 and 189 flows).
 
 A detector outputs a posterior $P(\text{benign}\mid\cdot)$
 and flags a flow as malicious when
@@ -528,7 +528,7 @@ and flags a flow as malicious when
 P(\text{benign}\mid\cdot) < \tau, \qquad \tau = 0.5 .
 \label{eq:decision}
 \end{equation}
-Table~\ref{tab:detectors} summarizes the two detectors and Table~\ref{tab:dataset} the dataset split.
+Table~\ref{tab:detectors} summarizes the two detectors.
 
 \paragraph{Reference detectors.} We also train three reference detectors on the same split and all 17
 features: a Random Forest (300 trees, class-balanced), gradient-boosted trees (XGBoost, depth 4,
@@ -559,22 +559,6 @@ Parameters            & 1138                  & 850                   & 96 \\
 Learning rate         & 0.01                  & 0.01                  & 0.05 \\
 Batch size            & 64                    & 64                    & 16 \\
 Max epochs (patience) & 150 (20)              & 150 (20)              & 30 (8) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[htbp]
-\centering
-\caption{Dataset composition and stratified 70/15/15 train/validation/test split (seed 0).}
-\label{tab:dataset}
-\begin{tabular}{lcccc}
-\toprule
-Class & Flows & Train & Val.\ & Test \\
-\midrule
-benign & 900  & 630 & 135 & 135 \\
-c2     & 360  & 252 &  54 &  54 \\
-\midrule
-Total  & 1260 & 882 & 189 & 189 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -913,31 +897,13 @@ resolution in 2. Seed 0 is the closest of the ten training seeds: in 8 of the 10
 the lower jitter on most paired instances (Section~\ref{sec:seeds}).
 
 \paragraph{Transferability.} Of the minimal-jitter evasions crafted against the native MLP, 10 of 20
-also evade the VQC on instances the VQC detected; of those crafted against the VQC, 15 of 19 also evade
-the MLP (Table~\ref{tab:transfer}). The grid is coarse, so a beacon tuned to just cross one detector's
+(Wilson 95\% interval [0.30, 0.70]) also evade the VQC on instances the VQC detected; of those crafted
+against the VQC, 15 of 19 ([0.57, 0.91]) also evade the MLP. The grid is coarse, so a beacon tuned to just cross one detector's
 threshold can sit one grid step short of the other's, and these two rates vary widely across training
 seeds (Section~\ref{sec:seeds}). Transfer to the deployed-style detectors is stable: evasions tuned
 against the native MLP also evade the Random Forest on 20 of 20, XGBoost on 30 of 30 and the rule on
 30 of 30 instances they detected. An attacker therefore needs no query access to the deployed detector:
 tuning against a surrogate MLP suffices for these three.
-
-\begin{table}[h]
-\centering
-\caption{Cross-model transferability of minimal-jitter evasions, counted on instances the target
-detector flagged unmodified. Square brackets: Wilson 95\% confidence interval.}
-\label{tab:transfer}
-\begin{tabular}{lc}
-\toprule
-Evasion tuned against $\rightarrow$ scored on & Transfer rate \\
-\midrule
-MLP (native) $\rightarrow$ VQC & 50\% (10/20\,{\scriptsize[0.30, 0.70]}) \\
-VQC $\rightarrow$ MLP (native) & 79\% (15/19\,{\scriptsize[0.57, 0.91]}) \\
-MLP (native) $\rightarrow$ Random Forest & 100\% (20/20\,{\scriptsize[0.84, 1.00]}) \\
-MLP (native) $\rightarrow$ XGBoost & 100\% (30/30\,{\scriptsize[0.89, 1.00]}) \\
-MLP (native) $\rightarrow$ \texttt{cv\_iat} rule & 100\% (30/30\,{\scriptsize[0.89, 1.00]}) \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \subsection{Adversarial-training defense and axis escalation}
 \label{sec:defense}
@@ -1399,7 +1365,7 @@ per seed, it was the easier target on most paired instances in 8 of 10 seeds on 
 an outlier in opposite directions: the most even C2 seed (9 harder, 8 easier) and the most one-sided
 exfiltration seed (21 of 21 easier). Transfer between the two varies as much: evasions tuned against
 the VQC fooled the native MLP on 1 of 19 to 25 of 30 instances, depending on the seed, so the asymmetry
-in Table~\ref{tab:transfer} is not a property of the models.
+at seed 0 (Section~\ref{sec:paired}) is not a property of the models.
 
 \begin{table}[htbp]
 \centering
