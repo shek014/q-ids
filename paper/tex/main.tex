@@ -40,8 +40,8 @@ Command-and-Control Beaconing and Data Exfiltration}
 
 \begin{abstract}
 Evasion of machine-learning network intrusion detectors is mostly shown in \emph{feature space}, on
-flow vectors that may match no traffic an attacker could send. We measure \emph{problem-space}
-evasion: every perturbation is sent as real traffic in an emulated network and counted only if a functional
+flow vectors that may match no sendable traffic. We measure \emph{problem-space}
+evasion: every perturbation is sent as emulated traffic and counted only if a functional
 oracle confirms the attack works. In both attack families the attacker
 sets the detected signal: timing regularity for command-and-control (C2) beaconing, throughput for data
 exfiltration. The detectors are a neural network on two input sets, an
@@ -49,13 +49,13 @@ exfiltration. The detectors are a neural network on two input sets, an
 where a detector flagged the unmodified attack, 326 were evaded by working traffic: beacons by a
 median $\pm$20--30\% check-in jitter, exfiltration by slowing a 3\,s transfer to about 6\,s against a
 60\,s deadline. Over ten training seeds, the quantum classifier had the lowest clean accuracy in 19 of
-20 runs and was easier to evade than its matched classical counterpart in 8 of 10 seeds per family.
-Adversarial training holds only for the configurations it was shown: payload padding re-breaks every
+20 runs and was easier to evade than its matched classical model in 8 of 10 seeds per family.
+Adversarial training holds only for configurations it was shown: payload padding re-breaks every
 hardened C2 detector, new transfer volumes or chunking re-break hardened tree ensembles, and tree
 ensembles hardened over the whole sampled timing and size range fall to padding just past it. Moving
 the threshold stops jittered beacons for the tree ensembles at a 23--24\% benign false-positive rate;
-padded beacons or throttled exfiltration need 34--49\%. In a public normal-host capture, 12.3\% of benign flows are as regular as our beacons (41.9\%
-in our synthetic mix).
+padded beacons or throttled exfiltration need 34--49\%. Ten-minute alarms and a RITA-style scorer catch no
+$\pm$50\%-jittered beacon at $\le$20\% false positives. In a public normal-host capture, 12.3\% of benign flows are as regular as our beacons.
 \end{abstract}
 
 \begin{keyword}
@@ -156,7 +156,9 @@ with padding evaded the jointly hardened MLPs and VQC on 6 to 9 of 9 held-out be
 XGBoost on 2 to 7. Training instead on random points across the whole timing and size range stopped
 both tree ensembles inside that range, with at most 1 of 9 held-out beacons evading in any seed. Just
 outside it, padding past the trained maximum evaded the range-wide XGBoost on 8 or 9 of 9 held-out
-beacons in every seed and the Random Forest on 3 to 5.
+beacons in every seed and the Random Forest on 3 to 5. Watching a host for ten minutes did not help the
+defender: alarms over ten 60\,s windows and a beacon scorer modelled on RITA caught no beacon with
+timing jitter of $0.5$ or more at any benign false-positive rate up to 20\%.
 
 Our contributions are:
 \begin{itemize}
@@ -173,6 +175,9 @@ Our contributions are:
         for the MLPs and the VQC in every seed, and partly open for XGBoost. Hardening on the whole
         range of both parameters closes that range for the tree ensembles, and beacons just past its
         edge evade them again.
+  \item Ten-minute runs showing that more observation does not recover the attacked signal: a
+        jittered beacon's \texttt{cv\_iat} over 600\,s matches its single-window value, and neither
+        multi-window alarms nor a RITA-style scorer separate it from a rigid benign host.
   \item A methodological result: evasion queries must reproduce the network conditions of the
         training captures. Exfiltration queries run on an uncontended two-host topology were out of
         distribution, and two detectors called them benign with no perturbation applied.
@@ -1570,7 +1575,9 @@ exfiltration) restored evasion at close to the original cost. Hardening on timin
 held against the combined attack only for the Random Forest, in every seed. Hardening on random points
 across the whole timing and size range held both tree ensembles inside that range and failed again
 just outside it: padding past the trained maximum evaded the range-wide XGBoost on 8 or 9 of 9 held-out
-beacons in every seed. All six detectors depend on flow features
+beacons in every seed. Over ten-minute runs, neither alarms across ten windows nor a RITA-style
+beacon scorer caught a beacon with timing jitter of $0.5$ or more at a benign false-positive rate up to
+20\%. All six detectors depend on flow features
 the attacker sets. Two questions remain open: how attacks whose signal is bound to their function
 behave under the same evaluation, and whether features an attacker cannot change cheaply resist this
 kind of evasion.
